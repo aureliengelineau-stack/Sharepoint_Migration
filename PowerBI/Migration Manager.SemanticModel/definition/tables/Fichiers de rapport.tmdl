@@ -1,0 +1,100 @@
+table 'Fichiers de rapport'
+	lineageTag: 227569fd-58d9-57d9-bc6c-761b7e93a124
+
+	column Fichier
+		dataType: string
+		lineageTag: b1bb2b1f-7d9c-5394-8d11-7ad1bf97908d
+		summarizeBy: none
+		sourceColumn: Fichier
+
+		annotation SummarizationSetBy = User
+
+	column Dossier
+		dataType: string
+		lineageTag: 0e8a379a-135c-52de-b2f4-0235d288d70f
+		summarizeBy: none
+		sourceColumn: Dossier
+
+		annotation SummarizationSetBy = User
+
+	column 'Date du fichier'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: c8599abe-0b2c-5b6f-bc6f-c584033fadbd
+		summarizeBy: none
+		sourceColumn: Date du fichier
+
+		annotation SummarizationSetBy = User
+
+	column 'Type de rapport'
+		dataType: string
+		lineageTag: 9ce25735-cd48-5a2c-a3ec-b744d0e54066
+		summarizeBy: none
+		sourceColumn: Type de rapport
+
+		annotation SummarizationSetBy = User
+
+	column Passage
+		dataType: double
+		formatString: 0
+		lineageTag: 331521b0-e842-5bd7-a81d-5eeb4ae4e427
+		summarizeBy: none
+		sourceColumn: Passage
+
+		annotation SummarizationSetBy = User
+
+	column Origine
+		dataType: string
+		lineageTag: 664c9d04-6f2a-5483-922d-4ca1916941b0
+		summarizeBy: none
+		sourceColumn: Origine
+
+		annotation SummarizationSetBy = User
+
+	column 'Task ID'
+		dataType: string
+		lineageTag: 5fce8a53-373c-54a8-b54c-251bbea2e2fc
+		summarizeBy: none
+		sourceColumn: Task ID
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Ko)'
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 733a82ac-cea2-544d-8183-ad59e061b141
+		summarizeBy: none
+		sourceColumn: Taille (Ko)
+
+		annotation SummarizationSetBy = User
+
+	partition 'Fichiers de rapport' = m
+		mode: import
+		source =
+				let
+				    Fichiers = Folder.Files(DossierRapports),
+				    Csv = Table.SelectRows(Fichiers, each Text.Lower([Extension]) = ".csv"),
+				    Base = Table.AddColumn(Csv, "_base", each Text.BeforeDelimiter([Name], ".", {0, RelativePosition.FromEnd}), type text),
+				    EstMM = Table.AddColumn(Base, "_mm", each
+				        Text.Contains(Text.Lower([Folder Path]), "\migrationmanager\") or Text.Contains(Text.Lower([Folder Path]), "/migrationmanager/"), type logical),
+				    Passage = Table.AddColumn(EstMM, "Passage", each if [_mm] then null else Outils[PassageDepuisFichier]([Name]), type nullable number),
+				    TypeRapport = Table.AddColumn(Passage, "Type de rapport", each
+				        if [_mm] then Text.BeforeDelimiter([_base], "_")
+				        else if [Passage] <> null then Text.BeforeDelimiter([_base], "_R", {0, RelativePosition.FromEnd})
+				        else [_base], type text),
+				    Origine = Table.AddColumn(TypeRapport, "Origine", each if [_mm] then "Rapport Migration Manager" else "Script du kit", type text),
+				    Tache = Table.AddColumn(Origine, "Task ID", each
+				        let p = Text.Split(Text.TrimEnd(Text.Replace([Folder Path], "/", "\"), "\"), "\"),
+				            n = List.Count(p)
+				        in if [_mm] and n >= 2 and Text.Lower(p{n - 2}) = "taches" then p{n - 1} else null, type nullable text),
+				    Taille = Table.AddColumn(Tache, "Taille (Ko)", each
+				        let s = try Record.FieldOrDefault([Attributes], "Size", null) otherwise null
+				        in if s = null then null else Number.Round(s / 1024, 1), type nullable number),
+				    Colonnes = Table.SelectColumns(Taille, {"Name", "Folder Path", "Date modified", "Type de rapport", "Passage", "Origine", "Task ID", "Taille (Ko)"}),
+				    Renommees = Table.RenameColumns(Colonnes, {{"Name", "Fichier"}, {"Folder Path", "Dossier"}, {"Date modified", "Date du fichier"}}),
+				    Resultat = Table.TransformColumnTypes(Renommees, {{"Fichier", type text}, {"Dossier", type text}, {"Date du fichier", type datetime}})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

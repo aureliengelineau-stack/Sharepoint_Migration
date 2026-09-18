@@ -1,0 +1,183 @@
+table 'Scan Migration Manager'
+	lineageTag: bd879376-5d78-5b60-81e5-f1c991affc3c
+
+	column 'Chemin source'
+		dataType: string
+		lineageTag: af60d61e-3806-512d-8b9d-ed79440917b0
+		summarizeBy: none
+		sourceColumn: Chemin source
+
+		annotation SummarizationSetBy = User
+
+	column 'Statut du scan'
+		dataType: string
+		lineageTag: e7389670-e503-530b-bdb8-dd1508a82f7c
+		summarizeBy: none
+		sourceColumn: Statut du scan
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: 86ed2680-b365-54fb-8ef7-ca7a6ae415d3
+		summarizeBy: none
+		sourceColumn: Taille (octets)
+
+		annotation SummarizationSetBy = User
+
+	column Fichiers
+		dataType: double
+		formatString: #,0
+		lineageTag: bef30e74-09a8-5268-ac00-907597c98ddf
+		summarizeBy: none
+		sourceColumn: Fichiers
+
+		annotation SummarizationSetBy = User
+
+	column Dossiers
+		dataType: double
+		formatString: #,0
+		lineageTag: 40d9a5b0-f6ac-58de-a4d5-aa9d4699f8c7
+		summarizeBy: none
+		sourceColumn: Dossiers
+
+		annotation SummarizationSetBy = User
+
+	column 'Longueur max. du chemin'
+		dataType: double
+		formatString: 0
+		lineageTag: 4033ee21-630f-58e0-bcdc-c1e8235b9016
+		summarizeBy: none
+		sourceColumn: Longueur max. du chemin
+
+		annotation SummarizationSetBy = User
+
+	column 'Permissions racine'
+		dataType: double
+		formatString: 0
+		lineageTag: 6f192135-3e63-58d2-99b5-e81156b29cff
+		summarizeBy: none
+		sourceColumn: Permissions racine
+
+		annotation SummarizationSetBy = User
+
+	column 'Dernier accès'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 6f557717-fb79-513d-8900-04af08db3b89
+		summarizeBy: none
+		sourceColumn: Dernier accès
+
+		annotation SummarizationSetBy = User
+
+	column 'Scan créé le'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 99a1cf2d-3413-5af8-a147-2139844bc75a
+		summarizeBy: none
+		sourceColumn: Scan créé le
+
+		annotation SummarizationSetBy = User
+
+	column 'Préparation à la migration'
+		dataType: string
+		lineageTag: 19a2e1a9-08be-5154-b795-28330392a0c1
+		summarizeBy: none
+		sourceColumn: Préparation à la migration
+
+		annotation SummarizationSetBy = User
+
+	column 'Task ID'
+		dataType: string
+		lineageTag: 53a80561-31d9-5654-a828-caceae6eca3b
+		summarizeBy: none
+		sourceColumn: Task ID
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichier rapport'
+		dataType: string
+		lineageTag: 09892b8c-ee87-5ade-a288-e539108c02b9
+		summarizeBy: none
+		sourceColumn: Fichier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: ec7ce082-9b86-557d-848e-0cc972803efd
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'État'
+		dataType: string
+		lineageTag: c10aa5db-fef4-56d4-8218-883577ef34bc
+		summarizeBy: none
+		sourceColumn: État
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.0
+		lineageTag: d9541184-5593-5945-94a7-491a03b51b06
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	partition 'Scan Migration Manager' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("ScanReport"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) => [
+				        #"Chemin source" = Outils[Texte](r, {"sourcepath", "source"}),
+				        #"Statut du scan" = Outils[Texte](r, {"scanstatus", "status"}),
+				        #"Taille (octets)" = Outils[OctetsDepuisTexte](Outils[Champ](r, {"datasizebytes", "datasize", "size"})),
+				        Fichiers = Outils[Nombre](r, {"filecount"}),
+				        Dossiers = Outils[Nombre](r, {"foldercount"}),
+				        #"Longueur max. du chemin" = Outils[Nombre](r, {"maxpathlength"}),
+				        #"Permissions racine" = Outils[Nombre](r, {"rootpermissions"}),
+				        #"Dernier accès" = Outils[DateHeure](r, {"lastaccessed"}),
+				        #"Scan créé le" = Outils[DateHeure](r, {"createdon"}),
+				        #"Préparation à la migration" = Outils[Texte](r, {"migrationreadiness", "readiness"}),
+				        #"Task ID" = Outils[Texte](r, {"taskid"}),
+				        #"Fichier rapport" = Outils[Texte](r, {"_fichier"}),
+				        #"Date du fichier" = Record.FieldOrDefault(r, "_date", null)
+				    ]),
+				    Typee = Table.FromRecords(Lignes, type table [
+				        #"Chemin source" = nullable text, #"Statut du scan" = nullable text, #"Taille (octets)" = nullable number, Fichiers = nullable number,
+				        Dossiers = nullable number, #"Longueur max. du chemin" = nullable number, #"Permissions racine" = nullable number,
+				        #"Dernier accès" = nullable datetime, #"Scan créé le" = nullable datetime, #"Préparation à la migration" = nullable text,
+				        #"Task ID" = nullable text, #"Fichier rapport" = nullable text, #"Date du fichier" = nullable datetime]),
+				    // dernier scan connu pour chaque chemin source
+				    Cle = Table.AddColumn(Typee, "_cle", each Outils[CleChemin]([Chemin source]), type nullable text),
+				    Tries = Table.Buffer(Table.Sort(Cle, {{"Date du fichier", Order.Descending}, {"Scan créé le", Order.Descending}})),
+				    Uniques = Table.Distinct(Tries, {"_cle"}),
+				    Corr = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Distinct(
+				                Table.SelectColumns(
+				                    Table.SelectRows(Table.AddColumn(stg_Correspondance, "_k", each Outils[CleChemin]([Chemin source]), type nullable text), each [_k] <> null),
+				                    {"_k", "Bibliothèque"}),
+				                {"_k"}),
+				            {{"Bibliothèque", "_biblio"}})),
+				    J = Table.Join(Uniques, "_cle", Corr, "_k", JoinKind.LeftOuter),
+				    Biblio = Table.AddColumn(J, "Bibliothèque", each if [_biblio] <> null then [_biblio] else "(inconnue)", type text),
+				    Etat = Table.AddColumn(Biblio, "État", each
+				        let s = Text.Lower((if [#"Préparation à la migration"] = null then "" else [#"Préparation à la migration"]) & " " & (if [#"Statut du scan"] = null then "" else [#"Statut du scan"]))
+				        in if Text.Contains(s, "error") or Text.Contains(s, "fail") or Text.Contains(s, "erreur") or Text.Contains(s, "échec") then "🔴 Erreur"
+				           else if Text.Contains(s, "warning") or Text.Contains(s, "avertissement") then "🟠 Avertissement"
+				           else if Text.Contains(s, "ready") or Text.Contains(s, "success") or Text.Contains(s, "prêt") then "🟢 Prêt"
+				           else "⚪ En cours / inconnu", type text),
+				    TailleMo = Table.AddColumn(Etat, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+				    Resultat = Table.RemoveColumns(TailleMo, {"_cle", "_k", "_biblio", "Date du fichier"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

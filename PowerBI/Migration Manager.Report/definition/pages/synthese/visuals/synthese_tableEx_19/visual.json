@@ -1,0 +1,168 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "synthese_tableEx_19",
+  "position": {
+    "x": 640,
+    "y": 498,
+    "z": 19000,
+    "width": 620,
+    "height": 210,
+    "tabOrder": 19000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Tâche"
+                }
+              },
+              "queryRef": "Taches Migration.Tâche",
+              "nativeQueryRef": "Tâche"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Statut"
+                }
+              },
+              "queryRef": "Taches Migration.Statut",
+              "nativeQueryRef": "Statut"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Éléments migrés"
+                }
+              },
+              "queryRef": "Taches Migration.Éléments migrés",
+              "nativeQueryRef": "Éléments migrés"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Éléments non migrés"
+                }
+              },
+              "queryRef": "Taches Migration.Éléments non migrés",
+              "nativeQueryRef": "Éléments non migrés"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Go migrés"
+                }
+              },
+              "queryRef": "Taches Migration.Go migrés",
+              "nativeQueryRef": "Go migrés"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Durée (min)"
+                }
+              },
+              "queryRef": "Taches Migration.Durée (min)",
+              "nativeQueryRef": "Durée (min)"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Taches Migration"
+                    }
+                  },
+                  "Property": "Agent"
+                }
+              },
+              "queryRef": "Taches Migration.Agent",
+              "nativeQueryRef": "Agent"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Tâches Migration Manager (Summary report)'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

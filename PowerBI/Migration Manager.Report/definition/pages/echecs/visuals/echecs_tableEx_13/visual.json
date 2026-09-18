@@ -1,0 +1,128 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "echecs_tableEx_13",
+  "position": {
+    "x": 830,
+    "y": 450,
+    "z": 13000,
+    "width": 430,
+    "height": 258,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Echecs Migration"
+                    }
+                  },
+                  "Property": "Code erreur (affiché)"
+                }
+              },
+              "queryRef": "Echecs Migration.Code erreur (affiché)",
+              "nativeQueryRef": "Code erreur (affiché)",
+              "displayName": "Code erreur"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Echecs Migration"
+                    }
+                  },
+                  "Property": "Catégorie"
+                }
+              },
+              "queryRef": "Echecs Migration.Catégorie",
+              "nativeQueryRef": "Catégorie"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Echecs Migration"
+                    }
+                  },
+                  "Property": "Passage"
+                }
+              },
+              "queryRef": "Echecs Migration.Passage",
+              "nativeQueryRef": "Passage"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Mesures"
+                    }
+                  },
+                  "Property": "Échecs (lignes)"
+                }
+              },
+              "queryRef": "_Mesures.Échecs (lignes)",
+              "nativeQueryRef": "Échecs (lignes)",
+              "displayName": "Échecs"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Codes erreur (dernier passage)'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

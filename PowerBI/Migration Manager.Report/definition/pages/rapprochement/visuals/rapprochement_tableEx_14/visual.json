@@ -1,0 +1,155 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "rapprochement_tableEx_14",
+  "position": {
+    "x": 20,
+    "y": 500,
+    "z": 14000,
+    "width": 1240,
+    "height": 208,
+    "tabOrder": 14000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Inventaire Source.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Chemin relatif"
+                }
+              },
+              "queryRef": "Inventaire Source.Chemin relatif",
+              "nativeQueryRef": "Chemin relatif"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Statut rapport"
+                }
+              },
+              "queryRef": "Inventaire Source.Statut rapport",
+              "nativeQueryRef": "Statut rapport"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Anomalies"
+                }
+              },
+              "queryRef": "Inventaire Source.Anomalies",
+              "nativeQueryRef": "Anomalies"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Message rapport"
+                }
+              },
+              "queryRef": "Inventaire Source.Message rapport",
+              "nativeQueryRef": "Message rapport"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Mesures"
+                    }
+                  },
+                  "Property": "Absents de SharePoint (liste)"
+                }
+              },
+              "queryRef": "_Mesures.Absents de SharePoint (liste)",
+              "nativeQueryRef": "Absents de SharePoint (liste)",
+              "displayName": "Nb"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Fichiers source absents de SharePoint'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,43 @@
+relationship 5d935d85-01c5-53ab-bd4e-c5c45e6fdbb1
+	fromColumn: 'Taches Migration'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship fba13c5b-edde-5981-b365-5b77fbda3113
+	fromColumn: 'Elements Migration'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship d2ae8aff-e045-529c-bfff-64cca3e16cd5
+	fromColumn: 'Echecs Migration'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship b8645797-044b-5bd3-b199-d879520a22df
+	fromColumn: 'Inventaire Source'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship 9e0814a5-8083-5fde-9808-8140ddb53bda
+	fromColumn: 'Inventaire SharePoint'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship 2b0ea715-4f3b-551a-a35a-dc36a4ea5366
+	fromColumn: 'Scan Migration Manager'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship 6f4881ca-16f7-58e2-9403-5b80bdaa35e0
+	fromColumn: 'Anomalies Source'.'Chemin complet'
+	toColumn: 'Inventaire Source'.'Chemin complet'
+
+relationship 6bdb400a-ce0d-5fb0-9ec0-4ba9cd00e1a1
+	fromColumn: 'Audit Constats'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship 37adf713-a5c3-5008-b8e0-ac1a476d0faa
+	fromColumn: 'Audit Synthese'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship c841ec70-e1cd-561b-90e5-aaaf25418d98
+	fromColumn: 'Audit Permissions'.'Bibliothèque'
+	toColumn: Bibliotheques.'Bibliothèque'
+
+relationship d879ea1b-a744-5c45-ba9d-b12232eb24bd
+	fromColumn: 'Audit Constats'.Code
+	toColumn: 'Audit Controles'.Code

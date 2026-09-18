@@ -1,0 +1,169 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "migrabilite_tableEx_14",
+  "position": {
+    "x": 590,
+    "y": 450,
+    "z": 14000,
+    "width": 670,
+    "height": 258,
+    "tabOrder": 14000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Constats"
+                    }
+                  },
+                  "Property": "Gravité"
+                }
+              },
+              "queryRef": "Audit Constats.Gravité",
+              "nativeQueryRef": "Gravité"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Controles"
+                    }
+                  },
+                  "Property": "Libellé"
+                }
+              },
+              "queryRef": "Audit Controles.Libellé",
+              "nativeQueryRef": "Libellé",
+              "displayName": "Contrôle"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Constats"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Audit Constats.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Constats"
+                    }
+                  },
+                  "Property": "Nom"
+                }
+              },
+              "queryRef": "Audit Constats.Nom",
+              "nativeQueryRef": "Nom"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Constats"
+                    }
+                  },
+                  "Property": "Détail"
+                }
+              },
+              "queryRef": "Audit Constats.Détail",
+              "nativeQueryRef": "Détail"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Controles"
+                    }
+                  },
+                  "Property": "Action"
+                }
+              },
+              "queryRef": "Audit Controles.Action",
+              "nativeQueryRef": "Action"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Constats"
+                    }
+                  },
+                  "Property": "Chemin relatif"
+                }
+              },
+              "queryRef": "Audit Constats.Chemin relatif",
+              "nativeQueryRef": "Chemin relatif"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Détail des constats et actions'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

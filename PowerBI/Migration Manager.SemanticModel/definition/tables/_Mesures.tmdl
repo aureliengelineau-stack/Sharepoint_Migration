@@ -1,0 +1,352 @@
+table _Mesures
+	lineageTag: a8e5e853-dc07-5a9e-a43c-5364c0bd5a52
+
+	measure 'Fichiers source' = COUNTROWS('Inventaire Source') + 0
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: 6f1628eb-5c8d-5622-b736-d563cce9e7a8
+
+	measure 'Éléments traités' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE()) + 0
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: 59cd3b27-1389-52b8-93cb-ea016c570d15
+
+	measure 'Fichiers migrés' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Migré") + 0
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: 8d9925a1-ae2b-57f2-b5ca-43bc9a05e962
+
+	measure 'Fichiers en échec' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Échec") + 0
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: be2fca73-ea6e-5987-98f9-58d1357b694f
+
+	measure 'Fichiers ignorés' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Ignoré / filtré") + 0
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: 44a052b3-cbec-54bb-a96f-891ea420dc06
+
+	measure 'Taux de réussite' = DIVIDE([Fichiers migrés], [Fichiers migrés] + [Fichiers en échec])
+		formatString: 0.0%
+		displayFolder: 1. Synthèse
+		lineageTag: a1500606-4b2f-56a7-8a5f-e3084b44c73f
+
+	measure 'Volume migré (Mo)' = DIVIDE(CALCULATE(SUM('Elements Migration'[Taille (octets)]), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Migré"), 1048576) + 0
+		formatString: #,0.0
+		displayFolder: 1. Synthèse
+		lineageTag: 080ef4fa-e286-5a0d-8fcd-5e8e921af382
+
+	measure 'Débit moyen (Go/h)' = DIVIDE(SUM('Taches Migration'[Go migrés]), SUM('Taches Migration'[Durée (s)]) / 3600)
+		formatString: 0.00
+		displayFolder: 1. Synthèse
+		lineageTag: 764ddd02-a265-57fd-a910-738b520a7464
+
+	measure 'Durée de la migration' =
+			VAR _debut = MIN('Taches Migration'[Début])
+			VAR _fin = MAX('Taches Migration'[Fin])
+			VAR _s = IF(ISBLANK(_debut) || ISBLANK(_fin), SUM('Taches Migration'[Durée (s)]), ROUND((_fin - _debut) * 86400, 0))
+			RETURN
+			    IF(ISBLANK(_s), "-", FORMAT(INT(_s / 3600), "00") & ":" & FORMAT(INT(MOD(_s, 3600) / 60), "00") & ":" & FORMAT(MOD(_s, 60), "00"))
+		displayFolder: 1. Synthèse
+		lineageTag: d0d6a45b-ff17-5bcc-8d40-aea52fcff6a1
+
+	measure 'Tâches de migration' = DISTINCTCOUNT('Taches Migration'[Task ID]) + 0
+		formatString: 0
+		displayFolder: 1. Synthèse
+		lineageTag: a8bff134-e2bc-5303-a1bb-a4ee68ff1690
+
+	measure 'Passages incrémentiels' = MAX('Elements Migration'[Passage]) + 0
+		formatString: 0
+		displayFolder: 1. Synthèse
+		lineageTag: 47ef657b-fc82-5dbe-9ba1-6dd09c967cbe
+
+	measure 'Agents utilisés' = CALCULATE(DISTINCTCOUNT('Taches Migration'[Agent]), NOT ISBLANK('Taches Migration'[Agent])) + 0
+		formatString: 0
+		displayFolder: 1. Synthèse
+		lineageTag: 0aac8f5e-0839-5b34-a9c7-18a0046c6f10
+
+	measure 'Tâches avec erreurs' = CALCULATE(COUNTROWS('Taches Migration'), 'Taches Migration'[Statut] <> "Terminé") + 0
+		formatString: 0
+		displayFolder: 1. Synthèse
+		lineageTag: 6bdcedaf-09af-5d5c-917f-592ae5f9e027
+
+	measure 'Début de migration' = MIN('Taches Migration'[Début])
+		formatString: dd/MM/yyyy HH:mm
+		displayFolder: 1. Synthèse
+		lineageTag: b3a04793-caeb-5dc7-ba3b-0d36205fe181
+
+	measure 'Fin de migration' = MAX('Taches Migration'[Fin])
+		formatString: dd/MM/yyyy HH:mm
+		displayFolder: 1. Synthèse
+		lineageTag: 38311a3e-63dc-5e45-ad1f-a50208ad1bcf
+
+	measure 'Progression pipeline' = CALCULATE(SUM('Pipeline Migration'[Nombre]), 'Pipeline Migration'[Type] = "Progression")
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: 80e2bdd7-0e28-5909-ac94-7a7aaf495574
+
+	measure 'Échecs pipeline' = CALCULATE(SUM('Pipeline Migration'[Nombre]), 'Pipeline Migration'[Type] = "Échec")
+		formatString: #,0
+		displayFolder: 1. Synthèse
+		lineageTag: e44ba798-9197-56ed-b253-b974a16b4875
+
+	measure 'Non migrés (liste)' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] <> "Migré")
+		formatString: #,0
+		displayFolder: 2. Échecs
+		lineageTag: 68b9bdd9-2ba5-5d61-a4f5-177c1956cf40
+
+	measure 'Échecs (lignes)' = CALCULATE(COUNTROWS('Echecs Migration'), 'Echecs Migration'[Dernier passage] = TRUE())
+		formatString: #,0
+		displayFolder: 2. Échecs
+		lineageTag: 3f7a6bbc-cd98-56fb-9a8e-1ed94eb398c7
+
+	measure 'Codes erreur distincts' = CALCULATE(DISTINCTCOUNT('Echecs Migration'[Code erreur]), NOT ISBLANK('Echecs Migration'[Code erreur])) + 0
+		formatString: 0
+		displayFolder: 2. Échecs
+		lineageTag: 0bed48a3-35f9-59b8-ab04-ec2f69809b6f
+
+	measure 'Échecs corrigés par relance' = CALCULATE(COUNTROWS('Echecs Migration'), 'Echecs Migration'[Corrigé par relance] = TRUE()) + 0
+		formatString: #,0
+		displayFolder: 2. Échecs
+		lineageTag: bb9e88ac-0d88-5a89-a446-3d15e6005666
+
+	measure 'Volume source (Mo)' = DIVIDE(SUM('Inventaire Source'[Taille (octets)]), 1048576) + 0
+		formatString: #,0.0
+		displayFolder: 3. Inventaire
+		lineageTag: cdc72d54-1feb-51b0-ac44-1a5983d3cf5e
+
+	measure 'Fichiers avec anomalie' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Avec anomalie] = TRUE()) + 0
+		formatString: #,0
+		displayFolder: 3. Inventaire
+		lineageTag: 724e64f0-08ef-5394-b50d-cdb1f9d3ffe0
+
+	measure '% fichiers avec anomalie' = DIVIDE([Fichiers avec anomalie], [Fichiers source])
+		formatString: 0.0%
+		displayFolder: 3. Inventaire
+		lineageTag: 10d44778-9db5-5f56-a834-57091f2aa182
+
+	measure 'Anomalies détectées' = COUNTROWS('Anomalies Source') + 0
+		formatString: #,0
+		displayFolder: 3. Inventaire
+		lineageTag: 1d27516e-8e6c-5cfa-b5e9-3c3f0df6db69
+
+	measure 'Fichiers en doublon' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Copie en doublon] = TRUE()) + 0
+		formatString: #,0
+		displayFolder: 3. Inventaire
+		lineageTag: 408c70e0-25a8-5c5f-9787-8dca85447fbb
+
+	measure 'Volume des doublons (Mo)' = DIVIDE(CALCULATE(SUM('Inventaire Source'[Taille (octets)]), 'Inventaire Source'[Copie en doublon] = TRUE()), 1048576) + 0
+		formatString: #,0.0
+		displayFolder: 3. Inventaire
+		lineageTag: 12953eaa-3813-5c56-abda-ac2603ed1e44
+
+	measure 'Fichiers de plus de 3 ans' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Âge (années)] >= 3) + 0
+		formatString: #,0
+		displayFolder: 3. Inventaire
+		lineageTag: 2aeb16cd-739f-5a2d-843b-0634d700eeea
+
+	measure '% fichiers de plus de 3 ans' = DIVIDE([Fichiers de plus de 3 ans], [Fichiers source])
+		formatString: 0.0%
+		displayFolder: 3. Inventaire
+		lineageTag: 3a170665-52b9-59ac-a0cf-a1680e58bd79
+
+	measure 'Fichiers dans SharePoint' = COUNTROWS('Inventaire SharePoint') + 0
+		formatString: #,0
+		displayFolder: 4. Rapprochement
+		lineageTag: b9c73bba-511a-5eac-ae9b-93ba5c766d07
+
+	measure 'Volume SharePoint (Mo)' = DIVIDE(SUM('Inventaire SharePoint'[Taille (octets)]), 1048576) + 0
+		formatString: #,0.0
+		displayFolder: 4. Rapprochement
+		lineageTag: c678d7c9-1415-5365-a0e5-d911852d1db2
+
+	measure 'Écart source vs SharePoint' = [Fichiers source] - [Fichiers dans SharePoint]
+		formatString: #,0
+		displayFolder: 4. Rapprochement
+		lineageTag: cf4addd2-bb08-50d1-97ec-56d267d14045
+
+	measure 'Fichiers source présents dans SharePoint' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Présent") + 0
+		formatString: #,0
+		displayFolder: 4. Rapprochement
+		lineageTag: 71b14029-28a5-5a3d-af3e-6cde8d46ec27
+
+	measure 'Taux de couverture SharePoint' = IF(CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Non vérifié") = COUNTROWS('Inventaire Source'), BLANK(), DIVIDE([Fichiers source présents dans SharePoint], [Fichiers source]))
+		formatString: 0.0%
+		displayFolder: 4. Rapprochement
+		lineageTag: e6f37efc-05a5-5182-a8bd-7dca3dc1e399
+
+	measure 'Absents de SharePoint (liste)' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Absent")
+		formatString: #,0
+		displayFolder: 4. Rapprochement
+		lineageTag: 69dc2a5e-7255-5ae7-85ed-57745d7465fa
+
+	measure 'Dates de modification conservées' = DIVIDE(CALCULATE(COUNTROWS('Inventaire SharePoint'), 'Inventaire SharePoint'[Date conservée] = "Oui"), CALCULATE(COUNTROWS('Inventaire SharePoint'), 'Inventaire SharePoint'[Date conservée] <> "n/a"))
+		formatString: 0.0%
+		displayFolder: 4. Rapprochement
+		lineageTag: 78bc73dd-bd7f-55ed-9c87-6b03c8b1a230
+
+	measure 'Rapports collectés' = COUNTROWS('Fichiers de rapport') + 0
+		formatString: #,0
+		displayFolder: 5. Rapports
+		lineageTag: 043ebcd3-b0ae-5385-a98b-dc5d3d53ad78
+
+	measure 'Types de rapports' = DISTINCTCOUNT('Fichiers de rapport'[Type de rapport]) + 0
+		formatString: 0
+		displayFolder: 5. Rapports
+		lineageTag: 0a09f761-d84a-5b74-b403-629bdeb5a67e
+
+	measure 'Sources scannées' = COUNTROWS('Scan Migration Manager') + 0
+		formatString: 0
+		displayFolder: 5. Rapports
+		lineageTag: 2dea2f90-02d7-51e3-b590-cd0d4da604f2
+
+	measure 'Sources scannées avec avertissement' = CALCULATE(COUNTROWS('Scan Migration Manager'), 'Scan Migration Manager'[État] <> "🟢 Prêt") + 0
+		formatString: 0
+		displayFolder: 5. Rapports
+		lineageTag: b48fcaab-1a50-5976-8adb-4d937d039821
+
+	measure 'Lignes de rapport migration' = COUNTROWS('Elements Migration') + COUNTROWS('Taches Migration') + COUNTROWS('Echecs Migration') + 0
+		formatString: #,0
+		displayFolder: 5. Rapports
+		lineageTag: 3ea97b9f-16c8-55a1-a841-0472cdb5b7a3
+
+	measure 'Fichiers audités' = SUM('Audit Synthese'[Fichiers]) + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 633750d7-5f88-5829-821c-d07c7094ca0f
+
+	measure 'Volume audité (Mo)' = SUM('Audit Synthese'[Volume (Mo)]) + 0
+		formatString: #,0.0
+		displayFolder: 6. Migrabilité
+		lineageTag: 476aeb4e-5f00-5ee8-b783-6eec173e2bdc
+
+	measure 'Fichiers bloqués (audit)' = SUM('Audit Synthese'[Fichiers bloqués]) + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 5f32dbc2-35c2-588e-b615-e1b331a53569
+
+	measure 'Fichiers migrables (audit)' = SUM('Audit Synthese'[Fichiers migrables]) + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 5f30ea47-da56-5aa3-93a5-15947b52b0be
+
+	measure '% fichiers migrables' = DIVIDE([Fichiers migrables (audit)], [Fichiers audités])
+		formatString: 0.0%
+		displayFolder: 6. Migrabilité
+		lineageTag: 70efbff6-2ab5-50d8-af8f-8ca1a283f132
+
+	measure 'Constats bloquants' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "Bloquant") + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 49c65583-220d-57f8-af5b-50c526a9858a
+
+	measure 'Constats à traiter' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "À traiter") + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 83dad905-5fee-54dc-ab58-091bbaac4928
+
+	measure 'Constats information' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "Information") + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 367937b9-4068-5cb0-b1e9-848360dfe89a
+
+	measure 'Constats par contrôle' = COUNTROWS('Audit Constats') + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 5677874f-6292-540b-9359-30758f92f3e1
+
+	measure 'Contrôles en défaut' = DISTINCTCOUNT('Audit Constats'[Code]) + 0
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: b4c58f2c-de46-5f09-b131-8c5ad0e09827
+
+	measure 'Contrôles conformes' = COUNTROWS('Audit Controles') - [Contrôles en défaut]
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: ed671bef-ab67-517e-98d4-dc1e8eaf076b
+
+	measure 'Bibliothèques rouges' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Rouge") + 0
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: 252d5ce2-0cf0-5cff-851f-0bbe6b55b94f
+
+	measure 'Bibliothèques oranges' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Orange") + 0
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: a96d12e8-5806-5f8e-b27e-3414e23a30d2
+
+	measure 'Bibliothèques vertes' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Vert") + 0
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: 6a7ece7e-2a79-53ca-8e49-bbcda9dd331c
+
+	measure 'Feu global' =
+			IF(COUNTROWS('Audit Synthese') = 0, "Audit absent",
+			    IF([Bibliothèques rouges] > 0, "🔴 Rouge",
+			        IF([Bibliothèques oranges] > 0, "🟠 Orange", "🟢 Vert")))
+		displayFolder: 6. Migrabilité
+		lineageTag: e7ac20d5-ae62-54e7-a5ab-96bd07f926c0
+
+	measure 'Résultat du contrôle' =
+			VAR _n = COUNTROWS('Audit Constats')
+			VAR _g = SELECTEDVALUE('Audit Controles'[Gravité])
+			RETURN
+			    IF(ISBLANK(_n), "🟢 Conforme",
+			        SWITCH(_g, "Bloquant", "🔴 Bloquant", "À traiter", "🟠 À traiter", "🔵 Information"))
+		displayFolder: 6. Migrabilité
+		lineageTag: b447c4f1-0a34-5bf0-b931-7b6b3446fe42
+
+	measure 'Permissions uniques (audit)' = SUM('Audit Synthese'[Permissions uniques]) + 0
+		formatString: #,0
+		displayFolder: 6. Migrabilité
+		lineageTag: 8b1b9124-a470-5642-aade-26b1d68f2c12
+
+	measure 'Refus et SID orphelins' = SUM('Audit Synthese'[Refus (Deny)]) + SUM('Audit Synthese'[SID orphelins]) + 0
+		formatString: 0
+		displayFolder: 6. Migrabilité
+		lineageTag: 0e1a9d17-b186-5b34-acca-89337f0a8418
+
+	measure 'Entrées ACL explicites' = COUNTROWS('Audit Permissions') + 0
+		formatString: #,0
+		displayFolder: 7. Autorisations
+		lineageTag: dd2f1018-bda0-5018-a948-fc518f3bb050
+
+	measure 'Refus (Deny)' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Type accès] = "Deny") + 0
+		formatString: 0
+		displayFolder: 7. Autorisations
+		lineageTag: 7d39197b-355f-559e-910a-de32199f9f36
+
+	measure 'Entrées orphelines' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Orpheline] = TRUE()) + 0
+		formatString: 0
+		displayFolder: 7. Autorisations
+		lineageTag: 319c14a6-5299-5ca4-b357-aad9798c6ce0
+
+	measure 'Comptes locaux ou intégrés' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Compte local ou intégré] = TRUE()) + 0
+		formatString: 0
+		displayFolder: 7. Autorisations
+		lineageTag: b9766289-4501-525a-8246-e4fce79383f2
+
+	measure 'Entrées non converties' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Correspondance SharePoint] IN {"Non migré (refus)", "Droit avancé non converti"}) + 0
+		formatString: 0
+		displayFolder: 7. Autorisations
+		lineageTag: ae13374e-2a69-5647-b4c7-76421e46892d
+
+	column Mesures
+		dataType: string
+		isHidden
+		lineageTag: b9ee4314-5c8a-5aa7-bc1e-2e7e60386994
+		summarizeBy: none
+		sourceColumn: Mesures
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Mesures = m
+		mode: import
+		source =
+				let
+				    Source = #table(type table [Mesures = text], {})
+				in
+				    Source
+
+	annotation PBI_ResultType = Table
+

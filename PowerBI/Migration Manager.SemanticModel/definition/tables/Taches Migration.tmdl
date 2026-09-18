@@ -1,0 +1,300 @@
+table 'Taches Migration'
+	lineageTag: cae7f369-f318-503e-b936-bc3de264c2e9
+
+	column 'Nom de la tâche'
+		dataType: string
+		lineageTag: 0135ac0b-398a-5baf-8c4c-9473d3964ce0
+		summarizeBy: none
+		sourceColumn: Nom de la tâche
+
+		annotation SummarizationSetBy = User
+
+	column Source
+		dataType: string
+		lineageTag: 68ffbc78-ea67-5d3e-ac9f-3e1b709f01b8
+		summarizeBy: none
+		sourceColumn: Source
+
+		annotation SummarizationSetBy = User
+
+	column Destination
+		dataType: string
+		lineageTag: 0783f14e-257f-5fb0-9252-a96f5d35794c
+		summarizeBy: none
+		sourceColumn: Destination
+
+		annotation SummarizationSetBy = User
+
+	column 'Statut rapport'
+		dataType: string
+		lineageTag: e9c61b49-60ea-5484-b6fc-2e382e337e43
+		summarizeBy: none
+		sourceColumn: Statut rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Octets totaux'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 4b967478-aedf-5900-a042-6fc312009ae8
+		summarizeBy: none
+		sourceColumn: Octets totaux
+
+		annotation SummarizationSetBy = User
+
+	column 'Go totaux'
+		dataType: double
+		formatString: 0.0000
+		lineageTag: 440b035e-b28f-52fc-bde8-f7cd5399f6ce
+		summarizeBy: none
+		sourceColumn: Go totaux
+
+		annotation SummarizationSetBy = User
+
+	column 'Nombre de fichiers'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: cda10358-56a3-57c6-93ab-ad48e4eb85b3
+		summarizeBy: none
+		sourceColumn: Nombre de fichiers
+
+		annotation SummarizationSetBy = User
+
+	column 'Octets migrés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 4c3d1f30-a1a6-5581-bc1b-81b9e35707f6
+		summarizeBy: none
+		sourceColumn: Octets migrés
+
+		annotation SummarizationSetBy = User
+
+	column 'Go migrés (rapport)'
+		dataType: double
+		isHidden
+		formatString: 0.0000
+		lineageTag: 9584cc4e-6ccf-5368-9000-7b6c97fbdec8
+		summarizeBy: none
+		sourceColumn: Go migrés (rapport)
+
+		annotation SummarizationSetBy = User
+
+	column 'Go non migrés'
+		dataType: double
+		formatString: 0.0000
+		lineageTag: de0f06f9-e03b-516a-8eeb-add625991729
+		summarizeBy: none
+		sourceColumn: Go non migrés
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments analysés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 9fed7dab-1236-5b6e-8c3d-416b57577473
+		summarizeBy: none
+		sourceColumn: Éléments analysés
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments à migrer'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 5bb04f7f-40fd-58b4-af74-f55abc3c7523
+		summarizeBy: none
+		sourceColumn: Éléments à migrer
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments migrés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 26e7bf73-934b-53e4-ad27-2078cc16a217
+		summarizeBy: none
+		sourceColumn: Éléments migrés
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments non migrés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: a797ce07-bf9c-560d-a512-7bb4eb929dba
+		summarizeBy: none
+		sourceColumn: Éléments non migrés
+
+		annotation SummarizationSetBy = User
+
+	column Avertissements
+		dataType: double
+		formatString: #,0.##
+		lineageTag: b3f50c47-2544-57de-b257-70460d06f400
+		summarizeBy: none
+		sourceColumn: Avertissements
+
+		annotation SummarizationSetBy = User
+
+	column 'Début'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 58ae01cd-5ea2-5770-9524-268df79ffbab
+		summarizeBy: none
+		sourceColumn: Début
+
+		annotation SummarizationSetBy = User
+
+	column Fin
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 81c1cb3e-ab27-5454-9d5e-cb82d727967f
+		summarizeBy: none
+		sourceColumn: Fin
+
+		annotation SummarizationSetBy = User
+
+	column 'Durée (s)'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 3826081f-6d35-5854-8d8e-d3a36b33620e
+		summarizeBy: none
+		sourceColumn: Durée (s)
+
+		annotation SummarizationSetBy = User
+
+	column 'Go par heure'
+		dataType: double
+		formatString: 0.00
+		lineageTag: 0939eafe-5c1a-556d-9a39-5e3acb07bd11
+		summarizeBy: none
+		sourceColumn: Go par heure
+
+		annotation SummarizationSetBy = User
+
+	column Passage
+		dataType: double
+		formatString: 0
+		lineageTag: e74d6fac-ba0a-54b5-a512-e6fcd64a08d7
+		summarizeBy: none
+		sourceColumn: Passage
+
+		annotation SummarizationSetBy = User
+
+	column Agent
+		dataType: string
+		lineageTag: 79f04132-7a23-50e0-9f3c-e439d19d92ba
+		summarizeBy: none
+		sourceColumn: Agent
+
+		annotation SummarizationSetBy = User
+
+	column 'Groupe d''agents'
+		dataType: string
+		lineageTag: 75f4041f-d317-50ba-b067-afa50c96fb3a
+		summarizeBy: none
+		sourceColumn: Groupe d'agents
+
+		annotation SummarizationSetBy = User
+
+	column 'Raison d''échec'
+		dataType: string
+		lineageTag: 2664726e-e97c-5fcc-8374-d262eec1a4f8
+		summarizeBy: none
+		sourceColumn: Raison d'échec
+
+		annotation SummarizationSetBy = User
+
+	column 'Task ID'
+		dataType: string
+		lineageTag: 17d6c890-4791-528e-96de-aca090c742d5
+		summarizeBy: none
+		sourceColumn: Task ID
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichier rapport'
+		dataType: string
+		lineageTag: e1aaf4b9-3e3f-5130-80cb-28f8e9c2824a
+		summarizeBy: none
+		sourceColumn: Fichier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: 49bca576-f347-515b-9f01-20f59898c8ac
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column Statut
+		dataType: string
+		lineageTag: 400a9661-4f31-5251-9c38-83f884f61ef8
+		summarizeBy: none
+		sourceColumn: Statut
+
+		annotation SummarizationSetBy = User
+
+	column 'Go migrés'
+		dataType: double
+		formatString: 0.0000
+		lineageTag: 45f3069a-dc7e-5879-a2ee-2269f51b0e4f
+		summarizeBy: none
+		sourceColumn: Go migrés
+
+		annotation SummarizationSetBy = User
+
+	column 'Durée (min)'
+		dataType: double
+		formatString: 0.0
+		lineageTag: 6e701537-6d3f-555e-a38a-b57278b5267f
+		summarizeBy: none
+		sourceColumn: Durée (min)
+
+		annotation SummarizationSetBy = User
+
+	column 'Tâche'
+		dataType: string
+		lineageTag: a6142aec-0b4b-500d-92ee-75983ec26785
+		summarizeBy: none
+		sourceColumn: Tâche
+
+		annotation SummarizationSetBy = User
+
+	partition 'Taches Migration' = m
+		mode: import
+		source =
+				let
+				    Corr = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Distinct(
+				                Table.SelectColumns(
+				                    Table.SelectRows(
+				                        Table.AddColumn(stg_Correspondance, "_cle", each Outils[CleChemin]([Chemin source]), type nullable text),
+				                        each [_cle] <> null),
+				                    {"_cle", "Bibliothèque"}),
+				                {"_cle"}),
+				            {{"_cle", "_cleCorr"}, {"Bibliothèque", "_biblioCorr"}})),
+				    Base = Table.Buffer(Table.AddColumn(stg_Taches, "_cle", each Outils[CleChemin]([Source]), type nullable text)),
+				    Joint = Table.Join(Base, "_cle", Corr, "_cleCorr", JoinKind.LeftOuter),
+				    Biblio = Table.AddColumn(Joint, "Bibliothèque", each
+				        if [_biblioCorr] <> null then [_biblioCorr]
+				        else let s = Outils[DernierSegment]([Destination]) in if s <> null then s else "(inconnue)", type text),
+				    Statut = Table.AddColumn(Biblio, "Statut", each
+				        let s = Outils[StatutNormalise]([Statut rapport], null)
+				        in if s = "Échec" then (if [#"Éléments migrés"] <> null and [#"Éléments migrés"] > 0 then "Terminé avec erreurs" else "Échec")
+				           else if s = "Migré" then "Terminé"
+				           else s, type text),
+				    GoMigres = Table.AddColumn(Statut, "Go migrés", each
+				        if [#"Go migrés (rapport)"] <> null then [#"Go migrés (rapport)"]
+				        else if [#"Octets migrés"] <> null then [#"Octets migrés"] / 1073741824
+				        else null, type nullable number),
+				    DureeMin = Table.AddColumn(GoMigres, "Durée (min)", each if [#"Durée (s)"] = null then null else Number.Round([#"Durée (s)"] / 60, 2), type nullable number),
+				    Libelle = Table.AddColumn(DureeMin, "Tâche", each
+				        if [#"Nom de la tâche"] <> null then [#"Nom de la tâche"]
+				        else [#"Bibliothèque"] & " - passage " & Number.ToText([Passage]), type text),
+				    Resultat = Table.RemoveColumns(Libelle, {"_cle", "_cleCorr", "_biblioCorr"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

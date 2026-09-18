@@ -1,0 +1,360 @@
+table 'Inventaire Source'
+	lineageTag: c4650398-8554-5dce-bbaa-53bd3520e870
+
+	column 'Chemin complet'
+		dataType: string
+		lineageTag: 6b33e19f-b8be-5947-b123-bcda2c75859c
+		summarizeBy: none
+		sourceColumn: Chemin complet
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin local'
+		dataType: string
+		lineageTag: cf8ff3bc-d921-5802-a369-3938c07ed917
+		summarizeBy: none
+		sourceColumn: Chemin local
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin relatif'
+		dataType: string
+		lineageTag: 3de24413-4a12-50b2-99e5-9177e1314910
+		summarizeBy: none
+		sourceColumn: Chemin relatif
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier racine'
+		dataType: string
+		lineageTag: 71b6f0f6-0898-5a5f-b548-9955a68072b3
+		summarizeBy: none
+		sourceColumn: Dossier racine
+
+		annotation SummarizationSetBy = User
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: e110d32b-0006-5ffb-834e-51cb18b57c06
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin cible'
+		dataType: string
+		lineageTag: 58f0de93-e1ad-5179-bcb1-20c4c9d2aeef
+		summarizeBy: none
+		sourceColumn: Chemin cible
+
+		annotation SummarizationSetBy = User
+
+	column Nom
+		dataType: string
+		lineageTag: 65c77585-0e06-5503-80df-563920d77b3f
+		summarizeBy: none
+		sourceColumn: Nom
+
+		annotation SummarizationSetBy = User
+
+	column Extension
+		dataType: string
+		lineageTag: e418f1e7-cb19-56b6-ac10-836a51e52c57
+		summarizeBy: none
+		sourceColumn: Extension
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: 0e179d76-0746-51d7-901e-fdd23516f6e0
+		summarizeBy: none
+		sourceColumn: Taille (octets)
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de création'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 7425f02c-10d1-555b-9e2d-1f6c0e091ebf
+		summarizeBy: none
+		sourceColumn: Date de création
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de modification'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: c7f96baa-53f2-559a-bb20-23193d991d6f
+		summarizeBy: none
+		sourceColumn: Date de modification
+
+		annotation SummarizationSetBy = User
+
+	column 'Caché'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 79885e88-fea9-55df-8b13-6fe5b0f8ebdd
+		summarizeBy: none
+		sourceColumn: Caché
+
+		annotation SummarizationSetBy = User
+
+	column 'Système'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 9a63d36c-4872-5274-9350-f39351f63818
+		summarizeBy: none
+		sourceColumn: Système
+
+		annotation SummarizationSetBy = User
+
+	column 'Longueur chemin'
+		dataType: double
+		formatString: 0
+		lineageTag: 86230566-f7b9-5afb-ae70-e28ec009e9d5
+		summarizeBy: none
+		sourceColumn: Longueur chemin
+
+		annotation SummarizationSetBy = User
+
+	column 'Longueur chemin cible'
+		dataType: double
+		formatString: 0
+		lineageTag: 6a60fbba-6640-59bc-8713-09f40bb0d693
+		summarizeBy: none
+		sourceColumn: Longueur chemin cible
+
+		annotation SummarizationSetBy = User
+
+	column Profondeur
+		dataType: double
+		formatString: 0
+		lineageTag: 2c713617-da69-5bc0-a623-7feb39d63349
+		summarizeBy: none
+		sourceColumn: Profondeur
+
+		annotation SummarizationSetBy = User
+
+	column Anomalies
+		dataType: string
+		lineageTag: 468a6b3b-f467-5413-9d52-2901b1285520
+		summarizeBy: none
+		sourceColumn: Anomalies
+
+		annotation SummarizationSetBy = User
+
+	column Hash
+		dataType: string
+		isHidden
+		lineageTag: cc8fece5-05e3-54a5-89c6-0ed3c1af7310
+		summarizeBy: none
+		sourceColumn: Hash
+
+		annotation SummarizationSetBy = User
+
+	column 'Statut rapport'
+		dataType: string
+		lineageTag: e3ff85fd-7054-5486-8a3b-853a49eb8a48
+		summarizeBy: none
+		sourceColumn: Statut rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Message rapport'
+		dataType: string
+		lineageTag: 490042df-d62a-53d8-a911-3baa0918fd2b
+		summarizeBy: none
+		sourceColumn: Message rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Présence SharePoint'
+		dataType: string
+		lineageTag: 5fcf7c0e-8618-58b7-bd3e-0c7d9f3404de
+		summarizeBy: none
+		sourceColumn: Présence SharePoint
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 1f46e349-f1ea-524e-badb-15667a320294
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column 'Âge (années)'
+		dataType: double
+		formatString: 0.0
+		lineageTag: 35fe4c07-e3d8-5065-8901-da24c924e73b
+		summarizeBy: none
+		sourceColumn: Âge (années)
+
+		annotation SummarizationSetBy = User
+
+	column 'Année de modification'
+		dataType: double
+		formatString: 0
+		lineageTag: acfc0f60-5c29-53dd-a553-469a6f5f9835
+		summarizeBy: none
+		sourceColumn: Année de modification
+
+		annotation SummarizationSetBy = User
+
+	column 'Ancienneté'
+		dataType: string
+		lineageTag: 18108621-ee97-57dd-a533-8594a4f4b483
+		summarizeBy: none
+		sourceColumn: Ancienneté
+		sortByColumn: 'Ordre ancienneté'
+
+		annotation SummarizationSetBy = User
+
+	column 'Ordre ancienneté'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: ab9054ba-d639-5e03-a988-8f94418fc354
+		summarizeBy: none
+		sourceColumn: Ordre ancienneté
+
+		annotation SummarizationSetBy = User
+
+	column 'Tranche de taille'
+		dataType: string
+		lineageTag: 7052c396-ea9a-5a3b-b9fa-fe410aea84ca
+		summarizeBy: none
+		sourceColumn: Tranche de taille
+		sortByColumn: 'Ordre tranche de taille'
+
+		annotation SummarizationSetBy = User
+
+	column 'Ordre tranche de taille'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 17e3e4fd-fa7a-554f-81c3-9c0e25234f08
+		summarizeBy: none
+		sourceColumn: Ordre tranche de taille
+
+		annotation SummarizationSetBy = User
+
+	column 'Type de fichier'
+		dataType: string
+		lineageTag: 1b60efb6-64b3-581a-a7d1-9bb92f173f8a
+		summarizeBy: none
+		sourceColumn: Type de fichier
+
+		annotation SummarizationSetBy = User
+
+	column 'Avec anomalie'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 2e9bed38-5472-5bc5-be8a-20d1a9cf6b34
+		summarizeBy: none
+		sourceColumn: Avec anomalie
+
+		annotation SummarizationSetBy = User
+
+	column 'Occurrences du contenu'
+		dataType: int64
+		formatString: 0
+		lineageTag: 2a325c41-8cff-5693-8674-e663b128fafc
+		summarizeBy: none
+		sourceColumn: Occurrences du contenu
+
+		annotation SummarizationSetBy = User
+
+	column 'Copie en doublon'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 80a97418-ab00-502f-9599-5a579290416f
+		summarizeBy: none
+		sourceColumn: Copie en doublon
+
+		annotation SummarizationSetBy = User
+
+	partition 'Inventaire Source' = m
+		mode: import
+		source =
+				let
+				    Base = Table.Buffer(
+				        Table.AddColumn(
+				            Table.AddColumn(stg_Source, "_cle", each Outils[CleChemin]([Chemin complet]), type nullable text),
+				            "_clecible", each if [Chemin cible] = null then null else Text.Lower([Chemin cible]), type nullable text)),
+				    Elem = Table.Buffer(
+				        Table.SelectColumns(
+				            Table.SelectRows(#"Elements Migration", each [Dernier passage] = true),
+				            {"Clé source", "Clé cible", "Statut", "Message"})),
+				    AvecRapports = not Table.IsEmpty(Elem),
+				    ElemSrc = Table.RenameColumns(
+				        Table.Distinct(Table.SelectRows(Table.SelectColumns(Elem, {"Clé source", "Statut", "Message"}), each [#"Clé source"] <> null), {"Clé source"}),
+				        {{"Clé source", "_k1"}, {"Statut", "_st1"}, {"Message", "_msg1"}}),
+				    ElemCib = Table.RenameColumns(
+				        Table.Distinct(Table.SelectRows(Table.SelectColumns(Elem, {"Clé cible", "Statut", "Message"}), each [#"Clé cible"] <> null), {"Clé cible"}),
+				        {{"Clé cible", "_k2"}, {"Statut", "_st2"}, {"Message", "_msg2"}}),
+				    SP = Table.Buffer(
+				        Table.AddColumn(
+				            Table.Distinct(
+				                Table.SelectColumns(
+				                    Table.AddColumn(Table.SelectRows(stg_SharePoint, each [Chemin cible] <> null), "_k3", each Text.Lower([Chemin cible]), type text),
+				                    {"_k3"}),
+				                {"_k3"}),
+				            "_sp", each true, type logical)),
+				    AvecSP = not Table.IsEmpty(SP),
+				    Hashs = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Group(
+				                Table.SelectRows(Base, each [Hash] <> null and [Hash] <> "" and [Hash] <> "ERREUR"),
+				                {"Hash"},
+				                {{"_n", each Table.RowCount(_), Int64.Type}, {"_premier", each List.Min([Chemin complet]), type text}}),
+				            {{"Hash", "_kh"}})),
+				    J1 = Table.Join(Base, "_cle", ElemSrc, "_k1", JoinKind.LeftOuter),
+				    J2 = Table.Join(J1, "_clecible", ElemCib, "_k2", JoinKind.LeftOuter),
+				    J3 = Table.Join(J2, "_clecible", SP, "_k3", JoinKind.LeftOuter),
+				    J4 = Table.Join(J3, "Hash", Hashs, "_kh", JoinKind.LeftOuter),
+				    StatutRapport = Table.AddColumn(J4, "Statut rapport", each
+				        if [_st1] <> null then [_st1]
+				        else if [_st2] <> null then [_st2]
+				        else if AvecRapports then "Non traité par Migration Manager"
+				        else "Rapports Migration Manager absents", type text),
+				    MessageRapport = Table.AddColumn(StatutRapport, "Message rapport", each if [_st1] <> null then [_msg1] else [_msg2], type nullable text),
+				    Presence = Table.AddColumn(MessageRapport, "Présence SharePoint", each
+				        if not AvecSP then "Non vérifié" else if [_sp] = true then "Présent" else "Absent", type text),
+				    TailleMo = Table.AddColumn(Presence, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+				    Aujourdhui = Date.From(DateTime.LocalNow()),
+				    Age = Table.AddColumn(TailleMo, "Âge (années)", each
+				        if [Date de modification] = null then null
+				        else Number.Round(Duration.Days(Aujourdhui - Date.From([Date de modification])) / 365.25, 1), type nullable number),
+				    Annee = Table.AddColumn(Age, "Année de modification", each
+				        if [Date de modification] = null then null else Date.Year([Date de modification]), type nullable number),
+				    Anc = Table.AddColumn(Annee, "Ancienneté", each
+				        let a = [#"Âge (années)"]
+				        in if a = null then "Inconnue" else if a < 1 then "< 1 an" else if a < 3 then "1 à 3 ans"
+				           else if a < 5 then "3 à 5 ans" else if a < 10 then "5 à 10 ans" else "> 10 ans", type text),
+				    AncOrdre = Table.AddColumn(Anc, "Ordre ancienneté", each
+				        let a = [#"Âge (années)"]
+				        in if a = null then 9 else if a < 1 then 1 else if a < 3 then 2 else if a < 5 then 3 else if a < 10 then 4 else 5, Int64.Type),
+				    Tranche = Table.AddColumn(AncOrdre, "Tranche de taille", each
+				        let o = [#"Taille (octets)"]
+				        in if o = null then "Inconnue" else if o = 0 then "Vide (0 octet)" else if o < 102400 then "< 100 Ko"
+				           else if o < 1048576 then "100 Ko à 1 Mo" else if o < 10485760 then "1 à 10 Mo"
+				           else if o < 104857600 then "10 à 100 Mo" else "> 100 Mo", type text),
+				    TrancheOrdre = Table.AddColumn(Tranche, "Ordre tranche de taille", each
+				        let o = [#"Taille (octets)"]
+				        in if o = null then 9 else if o = 0 then 0 else if o < 102400 then 1 else if o < 1048576 then 2
+				           else if o < 10485760 then 3 else if o < 104857600 then 4 else 5, Int64.Type),
+				    TypeF = Table.AddColumn(TrancheOrdre, "Type de fichier", each Outils[TypeFichier]([Extension]), type text),
+				    Anom = Table.AddColumn(TypeF, "Avec anomalie", each [Anomalies] <> null and [Anomalies] <> "", type logical),
+				    Occ = Table.AddColumn(Anom, "Occurrences du contenu", each if [_n] = null then 1 else [_n], Int64.Type),
+				    Doublon = Table.AddColumn(Occ, "Copie en doublon", each [_n] <> null and [_n] > 1 and [Chemin complet] <> [_premier], type logical),
+				    Resultat = Table.RemoveColumns(Doublon, {"_cle", "_clecible", "_k1", "_st1", "_msg1", "_k2", "_st2", "_msg2", "_k3", "_sp", "_kh", "_n", "_premier"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,142 @@
+table 'Analyse Migration'
+	lineageTag: d697663f-19d7-5a97-971b-0bf2adbe9661
+
+	column Passage
+		dataType: double
+		formatString: 0
+		lineageTag: c832f576-8536-57eb-aeeb-e9934d9af218
+		summarizeBy: none
+		sourceColumn: Passage
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments analysés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 764432b7-9c13-5c40-9a94-4e3c861d51ee
+		summarizeBy: none
+		sourceColumn: Éléments analysés
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossiers analysés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 80562ba9-16c5-52c3-a180-cdc7aeb8ab11
+		summarizeBy: none
+		sourceColumn: Dossiers analysés
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichiers analysés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: dcd494df-ad7f-513a-841f-7873ed31c187
+		summarizeBy: none
+		sourceColumn: Fichiers analysés
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossiers en anomalie'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 0d389508-35af-51b9-9c77-017797e9999b
+		summarizeBy: none
+		sourceColumn: Dossiers en anomalie
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments en anomalie'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: 752dd424-1ba1-5272-a571-3ea499a837f6
+		summarizeBy: none
+		sourceColumn: Éléments en anomalie
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments filtrés'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: e87bb5f7-20a0-507c-b776-b476940ee034
+		summarizeBy: none
+		sourceColumn: Éléments filtrés
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossiers à migrer'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: deb0cb57-d08c-5128-9f22-5b9d0b622390
+		summarizeBy: none
+		sourceColumn: Dossiers à migrer
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments à migrer'
+		dataType: double
+		formatString: #,0.##
+		lineageTag: bab846c0-3790-5df6-bf7d-df19d37edb6a
+		summarizeBy: none
+		sourceColumn: Éléments à migrer
+
+		annotation SummarizationSetBy = User
+
+	column Poste
+		dataType: string
+		lineageTag: 52762fb9-23e9-50d1-998f-3d080bdbbc39
+		summarizeBy: none
+		sourceColumn: Poste
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichier rapport'
+		dataType: string
+		lineageTag: f307e933-84ec-58c6-9b3a-2034adb7bc9a
+		summarizeBy: none
+		sourceColumn: Fichier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier rapport'
+		dataType: string
+		lineageTag: 1746aa20-f6c8-5a32-adf7-62864e867dfa
+		summarizeBy: none
+		sourceColumn: Dossier rapport
+
+		annotation SummarizationSetBy = User
+
+	partition 'Analyse Migration' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("ScanSummary"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+				        let
+				            fichier = Outils[Texte](r, {"_fichier"}),
+				            p = Outils[Nombre](r, {"incrementalround"}),
+				            pf = Outils[PassageDepuisFichier](fichier)
+				        in [
+				            Passage = if p <> null then p else if pf <> null then pf else 1,
+				            #"Éléments analysés" = Outils[Nombre](r, {"totalscanneditems"}),
+				            #"Dossiers analysés" = Outils[Nombre](r, {"totalscannedfolders"}),
+				            #"Fichiers analysés" = Outils[Nombre](r, {"totalscannedfiles"}),
+				            #"Dossiers en anomalie" = Outils[Nombre](r, {"folderswithissues"}),
+				            #"Éléments en anomalie" = Outils[Nombre](r, {"itemswithissues"}),
+				            #"Éléments filtrés" = Outils[Nombre](r, {"itemsfilteredout"}),
+				            #"Dossiers à migrer" = Outils[Nombre](r, {"folderstobemigrated"}),
+				            #"Éléments à migrer" = Outils[Nombre](r, {"itemstobemigrated", "totalitemstobemigrated"}),
+				            Poste = Outils[Texte](r, {"devicename"}),
+				            #"Fichier rapport" = fichier,
+				            #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+				        ]),
+				    Resultat = Table.FromRecords(Lignes, type table [
+				        Passage = number, #"Éléments analysés" = nullable number, #"Dossiers analysés" = nullable number,
+				        #"Fichiers analysés" = nullable number, #"Dossiers en anomalie" = nullable number, #"Éléments en anomalie" = nullable number,
+				        #"Éléments filtrés" = nullable number, #"Dossiers à migrer" = nullable number, #"Éléments à migrer" = nullable number,
+				        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text])
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

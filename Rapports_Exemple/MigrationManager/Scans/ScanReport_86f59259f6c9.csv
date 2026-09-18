@@ -1,0 +1,7 @@
+﻿Source path,Scan status,Data size,File count,Folder count,Max path length,Root permissions,Last accessed,Created on,Migration readiness,Task ID
+\\DEMO-SRV01\FileServer\01_Clients,Success,6.1 MB,616,1,147,4,09/16/2026 08:40:00,09/16/2026 09:35:12,Warning,3349fd14-72aa-cd6d-664a-74210c35b299
+\\DEMO-SRV01\FileServer\02_RH_Collaborateurs,Success,2.6 MB,365,1,132,6,09/16/2026 08:40:00,09/16/2026 09:35:12,Ready,dd33cf9d-485a-cab3-9a57-cce3e49118ed
+\\DEMO-SRV01\FileServer\03_Finance,Success,1.2 MB,55,1,85,4,09/16/2026 08:40:00,09/16/2026 09:35:12,Ready,325ba5eb-197d-69ba-a5e9-7c42807d93dd
+\\DEMO-SRV01\FileServer\04_Direction,Success,1.2 MB,38,1,90,4,09/16/2026 08:40:00,09/16/2026 09:35:12,Warning,f6905a86-0e8a-788b-bbe0-2c433de2633d
+\\DEMO-SRV01\FileServer\05_Commun,Success,32.8 MB,52,1,83,4,09/16/2026 08:40:00,09/16/2026 09:35:12,Warning,144d8e2c-0c71-1ed4-99dc-8ea7210714ba
+\\DEMO-SRV01\FileServer\06_Archives,Success,22.3 MB,228,1,576,4,09/16/2026 08:40:00,09/16/2026 09:35:12,Warning,e021d1dc-d0fd-57c9-cf39-6ff112cd4650

@@ -1,0 +1,72 @@
+table Bibliotheques
+	lineageTag: 48a8230d-31a5-5359-b297-440fefd087fc
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: 899840b6-f1ee-5209-9cc8-9d47b964450c
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+		sortByColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier source'
+		dataType: string
+		lineageTag: 1040c2d0-39fb-5292-a49c-3455ab87255c
+		summarizeBy: none
+		sourceColumn: Dossier source
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin source'
+		dataType: string
+		lineageTag: 15e83775-221f-58eb-bf4a-de8d122c9c76
+		summarizeBy: none
+		sourceColumn: Chemin source
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin local'
+		dataType: string
+		lineageTag: c45191b1-765d-5431-bd4a-0210d4de561a
+		summarizeBy: none
+		sourceColumn: Chemin local
+
+		annotation SummarizationSetBy = User
+
+	column 'URL cible'
+		dataType: string
+		lineageTag: a012f1e1-9a2b-5c8d-bcff-7bfa4d3f6fbc
+		summarizeBy: none
+		sourceColumn: URL cible
+
+		annotation SummarizationSetBy = User
+
+	column Ordre
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 5ba52984-3be8-5ac7-b334-98d299b677d2
+		summarizeBy: none
+		sourceColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	partition Bibliotheques = m
+		mode: import
+		source =
+				let
+				    Base = Table.SelectRows(stg_Correspondance, each [#"Bibliothèque"] <> null and [#"Bibliothèque"] <> ""),
+				    BaseUnique = Table.Distinct(Base, {"Bibliothèque", Comparer.OrdinalIgnoreCase}),
+				    Autres = List.Distinct(List.Select(stg_Source[#"Bibliothèque"] & stg_SharePoint[#"Bibliothèque"], each _ <> null and _ <> ""), Comparer.OrdinalIgnoreCase),
+				    Manquantes = List.Select(Autres, (b) => not List.Contains(BaseUnique[#"Bibliothèque"], b, Comparer.OrdinalIgnoreCase)),
+				    Ajout = Table.FromRecords(
+				        List.Transform(Manquantes, (b) => [#"Bibliothèque" = b, #"Dossier source" = null, #"Chemin source" = null, #"Chemin local" = null, #"URL cible" = null]),
+				        Value.Type(BaseUnique)),
+				    Tout = Table.Combine({BaseUnique, Ajout}),
+				    Resultat = Table.AddIndexColumn(Tout, "Ordre", 1, 1, Int64.Type)
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

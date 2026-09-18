@@ -1,0 +1,182 @@
+table 'Inventaire SharePoint'
+	lineageTag: b8ccd9ff-e597-5b51-9f5d-6d6dac31e773
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: b2506971-96a1-50e7-8047-8fd62c31f469
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin relatif'
+		dataType: string
+		lineageTag: 69f4a8a0-2ed8-5336-9c1d-e84af71d0a85
+		summarizeBy: none
+		sourceColumn: Chemin relatif
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin cible'
+		dataType: string
+		lineageTag: 4f289327-79d5-5042-b331-0edab8753fff
+		summarizeBy: none
+		sourceColumn: Chemin cible
+
+		annotation SummarizationSetBy = User
+
+	column Nom
+		dataType: string
+		lineageTag: e99da937-e2f1-53e8-98fd-e82fc1afc2f6
+		summarizeBy: none
+		sourceColumn: Nom
+
+		annotation SummarizationSetBy = User
+
+	column Extension
+		dataType: string
+		lineageTag: ab0eeda2-4365-5a55-9fb6-3a936c6c839d
+		summarizeBy: none
+		sourceColumn: Extension
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: e007b909-75d8-55b2-bf70-bee23f6689b4
+		summarizeBy: none
+		sourceColumn: Taille (octets)
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de création SharePoint'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: eadf9745-2e43-5796-b055-1dca0a82e38a
+		summarizeBy: none
+		sourceColumn: Date de création SharePoint
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de modification SharePoint'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 594a94f9-706f-58a6-a9c9-3956ab59ef27
+		summarizeBy: none
+		sourceColumn: Date de modification SharePoint
+
+		annotation SummarizationSetBy = User
+
+	column 'Date modification fichier'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 5d22ae16-3ada-535b-8abc-4e151c45797c
+		summarizeBy: none
+		sourceColumn: Date modification fichier
+
+		annotation SummarizationSetBy = User
+
+	column 'Créé par'
+		dataType: string
+		lineageTag: adc63218-5949-50a2-bf31-ba9085e66d1f
+		summarizeBy: none
+		sourceColumn: Créé par
+
+		annotation SummarizationSetBy = User
+
+	column 'Modifié par'
+		dataType: string
+		lineageTag: cf641569-ecbc-541d-ad48-55498aa72492
+		summarizeBy: none
+		sourceColumn: Modifié par
+
+		annotation SummarizationSetBy = User
+
+	column URL
+		dataType: string
+		lineageTag: 39bad110-2e43-58fc-8c40-978ff8cda03d
+		summarizeBy: none
+		sourceColumn: URL
+
+		annotation SummarizationSetBy = User
+
+	column 'ID élément'
+		dataType: string
+		lineageTag: 7bb44421-6458-533c-8958-cbc25c0e394a
+		summarizeBy: none
+		sourceColumn: ID élément
+
+		annotation SummarizationSetBy = User
+
+	column 'Présence source'
+		dataType: string
+		lineageTag: 6cf89db6-5a0b-597f-8ef4-ba7af34b6a35
+		summarizeBy: none
+		sourceColumn: Présence source
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de modification source'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: a4b556b6-e985-50b4-9eca-f11c5687d3d4
+		summarizeBy: none
+		sourceColumn: Date de modification source
+
+		annotation SummarizationSetBy = User
+
+	column 'Date conservée'
+		dataType: string
+		lineageTag: f8ab48ab-bf1a-5748-8c14-a147726e8206
+		summarizeBy: none
+		sourceColumn: Date conservée
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: e30cfbcb-dd02-53b0-ac70-79c223d48e34
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column 'Type de fichier'
+		dataType: string
+		lineageTag: 789fa83e-fb3d-59bd-98b1-425560fa75f9
+		summarizeBy: none
+		sourceColumn: Type de fichier
+
+		annotation SummarizationSetBy = User
+
+	partition 'Inventaire SharePoint' = m
+		mode: import
+		source =
+				let
+				    Base = Table.Buffer(Table.AddColumn(stg_SharePoint, "_clecible", each if [Chemin cible] = null then null else Text.Lower([Chemin cible]), type nullable text)),
+				    Src = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Distinct(
+				                Table.SelectColumns(
+				                    Table.AddColumn(Table.SelectRows(stg_Source, each [Chemin cible] <> null), "_k", each Text.Lower([Chemin cible]), type text),
+				                    {"_k", "Date de modification"}),
+				                {"_k"}),
+				            {{"Date de modification", "Date de modification source"}})),
+				    AvecSrc = not Table.IsEmpty(Src),
+				    J = Table.Join(Base, "_clecible", Src, "_k", JoinKind.LeftOuter),
+				    Presence = Table.AddColumn(J, "Présence source", each
+				        if not AvecSrc then "Non vérifié" else if [_k] = null then "Absent de la source" else "Présent dans la source", type text),
+				    Conservee = Table.AddColumn(Presence, "Date conservée", each
+				        if [Date de modification source] = null or [Date modification fichier] = null then "n/a"
+				        else if Number.Abs(Duration.TotalMinutes([Date modification fichier] - [Date de modification source])) <= 2 then "Oui"
+				        else "Non", type text),
+				    TailleMo = Table.AddColumn(Conservee, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+				    TypeF = Table.AddColumn(TailleMo, "Type de fichier", each Outils[TypeFichier]([Extension]), type text),
+				    Resultat = Table.RemoveColumns(TypeF, {"_clecible", "_k"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

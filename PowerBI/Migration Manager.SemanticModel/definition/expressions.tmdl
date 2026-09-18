@@ -1,0 +1,385 @@
+expression DossierRapports = "C:\DemoMigration\Rapports" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 97664b6c-3f48-53e6-b21f-fc78f07bca25
+	queryGroup: Paramètres
+
+	annotation PBI_ResultType = Text
+
+expression CultureRapports = "fr-FR" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 70b0e286-000e-58fb-a679-6508f20f0408
+	queryGroup: Paramètres
+
+	annotation PBI_ResultType = Text
+
+expression Outils =
+		let
+		    fChamp = (r as record, noms as list) as any =>
+		        List.First(
+		            List.RemoveNulls(
+		                List.Transform(noms, (n) =>
+		                    let v = Record.FieldOrDefault(r, n, null)
+		                    in if v = null then null else if v is text and Text.Trim(v) = "" then null else v)),
+		            null),
+		    fTexte = (r as record, noms as list) as nullable text =>
+		        let v = fChamp(r, noms) in if v = null then null else Text.Trim(Text.From(v)),
+		    fNombreDepuis = (v as any) as nullable number =>
+		        if v = null then null
+		        else if v is number then v
+		        else
+		            let
+		                t = Text.Remove(Text.From(v), {" ", "#(00A0)", "#(202F)"}),
+		                u = Text.Replace(t, ",", ".")
+		            in
+		                try Number.FromText(u, "en-US") otherwise null,
+		    fNombre = (r as record, noms as list) as nullable number => fNombreDepuis(fChamp(r, noms)),
+		    fDateHeure = (r as record, noms as list) as nullable datetime =>
+		        let v = fTexte(r, noms)
+		        in if v = null then null
+		           else try DateTime.FromText(v, CultureRapports)
+		                otherwise try DateTime.FromText(v, "en-US")
+		                otherwise try DateTime.From(DateTimeZone.FromText(v))
+		                otherwise null,
+		    fDureeSecondes = (r as record, noms as list) as nullable number =>
+		        let v = fTexte(r, noms)
+		        in if v = null then null
+		           else try Duration.TotalSeconds(Duration.FromText(v)) otherwise fNombreDepuis(v),
+		    fOctetsDepuisTexte = (v as any) as nullable number =>
+		        if v = null then null
+		        else if v is number then v
+		        else
+		            let
+		                s = Text.Upper(Text.Trim(Text.From(v))),
+		                unites = {{"TB", 1099511627776}, {"GB", 1073741824}, {"MB", 1048576}, {"KB", 1024}, {"TO", 1099511627776}, {"GO", 1073741824}, {"MO", 1048576}, {"KO", 1024}, {"BYTES", 1}, {"OCTETS", 1}, {"B", 1}},
+		                trouvee = List.First(List.Select(unites, (u) => Text.EndsWith(s, u{0})), null),
+		                nombre = fNombreDepuis(if trouvee = null then s else Text.Trim(Text.Start(s, Text.Length(s) - Text.Length(trouvee{0}))))
+		            in
+		                if nombre = null then null else nombre * (if trouvee = null then 1 else trouvee{1}),
+		    fBooleen = (r as record, noms as list) as nullable logical =>
+		        let v = fTexte(r, noms)
+		        in if v = null then null else List.Contains({"true", "vrai", "1", "yes", "oui"}, Text.Lower(v)),
+		    fContient = (s as text, mots as list) as logical => List.AnyTrue(List.Transform(mots, (m) => Text.Contains(s, m))),
+		    fStatut = (statut as nullable text, categorie as nullable text) as text =>
+		        let s = Text.Lower((if statut = null then "" else statut) & " " & (if categorie = null then "" else categorie))
+		        in if fContient(s, {"fail", "error", "échec", "echec", "erreur"}) then "Échec"
+		           else if fContient(s, {"skip", "filter", "ignor", "exclu"}) then "Ignoré / filtré"
+		           else if fContient(s, {"migrated", "success", "succeeded", "complete", "migré", "termin"}) then "Migré"
+		           else if Text.Trim(s) = "" then "Inconnu"
+		           else "Autre",
+		    fCleChemin = (t as nullable text) as nullable text =>
+		        if t = null or Text.Trim(t) = "" then null
+		        else
+		            let
+		                u = Text.Trim(t),
+		                v = if Text.StartsWith(u, "\\?\UNC\") then "\\" & Text.Middle(u, 8)
+		                    else if Text.StartsWith(u, "\\?\") then Text.Middle(u, 4)
+		                    else u
+		            in
+		                Text.Lower(Text.TrimEnd(v, {"\", "/"})),
+		    fCleUrl = (u as nullable text) as nullable text =>
+		        if u = null or Text.Trim(u) = "" then null
+		        else
+		            let
+		                t = Text.Trim(u),
+		                chemin = if Text.StartsWith(Text.Lower(t), "http") then "/" & Text.AfterDelimiter(t, "/", 2) else t,
+		                decode = Text.Replace(Text.Replace(Text.Replace(chemin, "%20", " "), "%23", "#"), "%25", "%")
+		            in
+		                Text.Lower(Text.TrimEnd(decode, "/")),
+		    fDernierSegment = (u as nullable text) as nullable text =>
+		        if u = null or Text.Trim(u) = "" then null
+		        else List.Last(Text.SplitAny(Text.TrimEnd(Text.Trim(u), {"/", "\"}), "/\")),
+		    fExtension = (ext as nullable text, nom as nullable text) as text =>
+		        let
+		            e = if ext <> null and Text.Trim(ext) <> "" then ext
+		                else if nom <> null and Text.Contains(nom, ".") then Text.AfterDelimiter(nom, ".", {0, RelativePosition.FromEnd})
+		                else null
+		        in
+		            if e = null then "(sans)" else Text.Lower(Text.TrimStart(Text.Trim(e), ".")),
+		    fTypeFichier = (ext as nullable text) as text =>
+		        let e = if ext = null then "" else Text.Lower(ext)
+		        in if List.Contains({"doc", "docx", "docm", "dotx", "odt", "rtf"}, e) then "Word"
+		           else if List.Contains({"xls", "xlsx", "xlsm", "xltx", "csv", "ods"}, e) then "Excel / CSV"
+		           else if List.Contains({"ppt", "pptx", "potx", "odp"}, e) then "PowerPoint"
+		           else if e = "pdf" then "PDF"
+		           else if List.Contains({"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "heic"}, e) then "Image"
+		           else if List.Contains({"mp4", "mov", "avi", "wmv", "mkv"}, e) then "Vidéo"
+		           else if List.Contains({"txt", "md", "eml", "msg", "log"}, e) then "Texte / Mail"
+		           else if List.Contains({"zip", "7z", "rar", "bak", "pst", "tmp", "db"}, e) then "Archive / Sauvegarde / Système"
+		           else "Autre",
+		    fPassageDepuisFichier = (nom as nullable text) as nullable number =>
+		        if nom = null then null
+		        else try Number.FromText(Text.AfterDelimiter(Text.BeforeDelimiter(nom, ".", {0, RelativePosition.FromEnd}), "_R", {0, RelativePosition.FromEnd}), "en-US") otherwise null
+		in
+		    [
+		        Champ = fChamp,
+		        Texte = fTexte,
+		        Nombre = fNombre,
+		        DateHeure = fDateHeure,
+		        DureeSecondes = fDureeSecondes,
+		        Booleen = fBooleen,
+		        OctetsDepuisTexte = fOctetsDepuisTexte,
+		        StatutNormalise = fStatut,
+		        CleChemin = fCleChemin,
+		        CleUrl = fCleUrl,
+		        DernierSegment = fDernierSegment,
+		        Extension = fExtension,
+		        TypeFichier = fTypeFichier,
+		        PassageDepuisFichier = fPassageDepuisFichier
+		    ]
+	lineageTag: 5d6065d4-3667-57df-8758-611ad4fe9b84
+	queryGroup: Fonctions
+
+	annotation PBI_ResultType = Record
+
+expression fnLireCsv =
+		(prefixe as text) as table =>
+		let
+		    Fichiers = Folder.Files(DossierRapports),
+		    Filtres = Table.SelectRows(Fichiers, each Text.StartsWith([Name], prefixe, Comparer.OrdinalIgnoreCase) and Text.Lower([Extension]) = ".csv"),
+		    LireUn = (contenu as binary, nom as text, dossier as text, date as any) as table =>
+		        let
+		            Csv = Csv.Document(contenu, [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+		            Entetes = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]),
+		            Normalises = Table.TransformColumnNames(Entetes, (n) => Text.Lower(Text.Select(n, {"a".."z", "A".."Z", "0".."9"}))),
+		            AvecFichier = Table.AddColumn(Normalises, "_fichier", (r) => nom, type text),
+		            AvecDossier = Table.AddColumn(AvecFichier, "_dossier", (r) => dossier, type text),
+		            AvecDate = Table.AddColumn(AvecDossier, "_date", (r) => date, type nullable datetime)
+		        in
+		            AvecDate,
+		    Tables = List.Transform(Table.ToRecords(Filtres), (f) => LireUn(f[Content], f[Name], f[Folder Path], f[Date modified])),
+		    Resultat = if List.IsEmpty(Tables) then #table({"_fichier", "_dossier", "_date"}, {}) else Table.Combine(Tables)
+		in
+		    Resultat
+	lineageTag: daff11f1-25a5-514c-8875-c018d141052b
+	queryGroup: Fonctions
+
+	annotation PBI_ResultType = Function
+
+expression stg_Correspondance =
+		let
+		    Brut = fnLireCsv("Correspondance_Bibliotheques"),
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) => [
+		        #"Bibliothèque" = Outils[Texte](r, {"bibliotheque"}),
+		        #"Dossier source" = Outils[Texte](r, {"dossiersource"}),
+		        #"Chemin source" = Outils[Texte](r, {"cheminsource"}),
+		        #"Chemin local" = Outils[Texte](r, {"cheminlocal"}),
+		        #"URL cible" = Outils[Texte](r, {"urlcible"})
+		    ]),
+		    Resultat = Table.FromRecords(Lignes, type table [#"Bibliothèque" = nullable text, #"Dossier source" = nullable text, #"Chemin source" = nullable text, #"Chemin local" = nullable text, #"URL cible" = nullable text])
+		in
+		    Resultat
+	lineageTag: eb391938-7bc6-56b1-9088-08214de8bfe1
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+
+expression stg_Source =
+		let
+		    Brut = fnLireCsv("Inventaire_Source"),
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+		        let nom = Outils[Texte](r, {"nom"}), biblio = Outils[Texte](r, {"bibliotheque"}), anomalies = Outils[Texte](r, {"anomalies"})
+		        in [
+		            #"Chemin complet" = Outils[Texte](r, {"chemincomplet"}),
+		            #"Chemin local" = Outils[Texte](r, {"cheminlocal"}),
+		            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+		            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+		            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+		            #"Chemin cible" = Outils[Texte](r, {"chemincible"}),
+		            Nom = nom,
+		            Extension = Outils[Extension](Outils[Texte](r, {"extension"}), nom),
+		            #"Taille (octets)" = Outils[Nombre](r, {"tailleoctets"}),
+		            #"Date de création" = Outils[DateHeure](r, {"datecreation"}),
+		            #"Date de modification" = Outils[DateHeure](r, {"datemodification"}),
+		            #"Caché" = Outils[Booleen](r, {"cache"}),
+		            #"Système" = Outils[Booleen](r, {"systeme"}),
+		            #"Longueur chemin" = Outils[Nombre](r, {"longueurchemin"}),
+		            #"Longueur chemin cible" = Outils[Nombre](r, {"longueurchemincible"}),
+		            Profondeur = Outils[Nombre](r, {"profondeur"}),
+		            Anomalies = if anomalies = null then "" else anomalies,
+		            Hash = Outils[Texte](r, {"hashsha256"})
+		        ]),
+		    Resultat = Table.FromRecords(Lignes, type table [
+		        #"Chemin complet" = nullable text, #"Chemin local" = nullable text, #"Chemin relatif" = nullable text, #"Dossier racine" = nullable text,
+		        #"Bibliothèque" = text, #"Chemin cible" = nullable text, Nom = nullable text, Extension = text,
+		        #"Taille (octets)" = nullable number, #"Date de création" = nullable datetime, #"Date de modification" = nullable datetime,
+		        #"Caché" = nullable logical, #"Système" = nullable logical, #"Longueur chemin" = nullable number,
+		        #"Longueur chemin cible" = nullable number, Profondeur = nullable number, Anomalies = text, Hash = nullable text])
+		in
+		    Resultat
+	lineageTag: 60dad574-16b0-5c72-93d6-224e2c79a34c
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+
+expression stg_SharePoint =
+		let
+		    Brut = fnLireCsv("Inventaire_SharePoint"),
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+		        let nom = Outils[Texte](r, {"nom"}), biblio = Outils[Texte](r, {"bibliotheque"})
+		        in [
+		            #"Bibliothèque" = if biblio = null then "(inconnue)" else biblio,
+		            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+		            #"Chemin cible" = Outils[Texte](r, {"chemincible"}),
+		            Nom = nom,
+		            Extension = Outils[Extension](Outils[Texte](r, {"extension"}), nom),
+		            #"Taille (octets)" = Outils[Nombre](r, {"tailleoctets"}),
+		            #"Date de création SharePoint" = Outils[DateHeure](r, {"datecreationsp"}),
+		            #"Date de modification SharePoint" = Outils[DateHeure](r, {"datemodificationsp"}),
+		            #"Date modification fichier" = Outils[DateHeure](r, {"datemodificationfichier"}),
+		            #"Créé par" = Outils[Texte](r, {"creepar"}),
+		            #"Modifié par" = Outils[Texte](r, {"modifiepar"}),
+		            URL = Outils[Texte](r, {"weburl"}),
+		            #"ID élément" = Outils[Texte](r, {"idelement"})
+		        ]),
+		    Resultat = Table.FromRecords(Lignes, type table [
+		        #"Bibliothèque" = text, #"Chemin relatif" = nullable text, #"Chemin cible" = nullable text, Nom = nullable text,
+		        Extension = text, #"Taille (octets)" = nullable number, #"Date de création SharePoint" = nullable datetime,
+		        #"Date de modification SharePoint" = nullable datetime, #"Date modification fichier" = nullable datetime,
+		        #"Créé par" = nullable text, #"Modifié par" = nullable text, URL = nullable text, #"ID élément" = nullable text])
+		in
+		    Resultat
+	lineageTag: aa57cbda-715e-5234-a4f6-6e6e19e56403
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+
+expression stg_Taches =
+		let
+		    Brut = fnLireCsv("SummaryReport"),
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+		        let passage = Outils[Nombre](r, {"roundnumber", "incrementalround"})
+		        in [
+		            #"Nom de la tâche" = Outils[Texte](r, {"taskname"}),
+		            Source = Outils[Texte](r, {"source", "sourcepath"}),
+		            Destination = Outils[Texte](r, {"destination"}),
+		            #"Statut rapport" = Outils[Texte](r, {"status"}),
+		            #"Octets totaux" = Outils[Nombre](r, {"totalbytes"}),
+		            #"Go totaux" = Outils[Nombre](r, {"totalgb"}),
+		            #"Nombre de fichiers" = Outils[Nombre](r, {"countoffiles"}),
+		            #"Octets migrés" = Outils[Nombre](r, {"migratedbytes"}),
+		            #"Go migrés (rapport)" = Outils[Nombre](r, {"migratedgb", "migratedgbincurrentround"}),
+		            #"Go non migrés" = Outils[Nombre](r, {"gbnotmigrated", "gbnotmigratedincurrentround"}),
+		            #"Éléments analysés" = Outils[Nombre](r, {"totalscanneditems", "totalscanneditem"}),
+		            #"Éléments à migrer" = Outils[Nombre](r, {"totaltobemigrateditems", "totaltobemigrated", "totaltobemigratedincurrentround"}),
+		            #"Éléments migrés" = Outils[Nombre](r, {"migrateditems", "migrateditemsincurrentround"}),
+		            #"Éléments non migrés" = Outils[Nombre](r, {"itemsnotmigrated", "itemsnotmigratedincurrentround"}),
+		            Avertissements = Outils[Nombre](r, {"warningcount", "warningcountincurrentround"}),
+		            #"Début" = Outils[DateHeure](r, {"starttime"}),
+		            Fin = Outils[DateHeure](r, {"endtime"}),
+		            #"Durée (s)" = Outils[DureeSecondes](r, {"duration"}),
+		            #"Go par heure" = Outils[Nombre](r, {"gbhour"}),
+		            Passage = if passage = null then 1 else passage,
+		            Agent = Outils[Texte](r, {"agent", "devicename"}),
+		            #"Groupe d'agents" = Outils[Texte](r, {"agentgroup"}),
+		            #"Raison d'échec" = Outils[Texte](r, {"taskfailurereason"}),
+		            #"Task ID" = Outils[Texte](r, {"taskid"}),
+		            #"Fichier rapport" = Outils[Texte](r, {"_fichier"}),
+		            #"Date du fichier" = Record.FieldOrDefault(r, "_date", null)
+		        ]),
+		    Typee = Table.FromRecords(Lignes, type table [
+		        #"Nom de la tâche" = nullable text, Source = nullable text, Destination = nullable text, #"Statut rapport" = nullable text,
+		        #"Octets totaux" = nullable number, #"Go totaux" = nullable number, #"Nombre de fichiers" = nullable number, #"Octets migrés" = nullable number,
+		        #"Go migrés (rapport)" = nullable number, #"Go non migrés" = nullable number, #"Éléments analysés" = nullable number,
+		        #"Éléments à migrer" = nullable number, #"Éléments migrés" = nullable number, #"Éléments non migrés" = nullable number,
+		        Avertissements = nullable number, #"Début" = nullable datetime, Fin = nullable datetime, #"Durée (s)" = nullable number,
+		        #"Go par heure" = nullable number, Passage = number, Agent = nullable text, #"Groupe d'agents" = nullable text,
+		        #"Raison d'échec" = nullable text, #"Task ID" = nullable text, #"Fichier rapport" = nullable text, #"Date du fichier" = nullable datetime]),
+		    // un même Summary report peut être téléchargé plusieurs fois : on garde la version la plus récente de chaque tâche
+		    Tries = Table.Buffer(Table.Sort(Typee, {{"Date du fichier", Order.Descending}})),
+		    AvecId = Table.Distinct(Table.SelectRows(Tries, each [Task ID] <> null), {"Task ID", "Passage"}),
+		    SansId = Table.SelectRows(Tries, each [Task ID] = null),
+		    Resultat = Table.RemoveColumns(Table.Combine({AvecId, SansId}), {"Date du fichier"})
+		in
+		    Resultat
+	lineageTag: 0c6dba3b-7140-5eac-9c1b-3dcc8872dee6
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+
+expression stg_Elements =
+		let
+		    Brut = fnLireCsv("ItemReport"),
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+		        let
+		            fichier = Outils[Texte](r, {"_fichier"}),
+		            nom = Outils[Texte](r, {"filename", "itemname", "name"}),
+		            passage = Outils[Nombre](r, {"incrementalround", "roundnumber"}),
+		            passageFichier = Outils[PassageDepuisFichier](fichier)
+		        in [
+		            Source = Outils[Texte](r, {"source"}),
+		            Destination = Outils[Texte](r, {"destination"}),
+		            Nom = nom,
+		            #"Extension brute" = Outils[Texte](r, {"extension"}),
+		            #"Taille (octets)" = Outils[Nombre](r, {"filesize", "itemsize", "filesizebytes", "itemsizebytes", "size"}),
+		            #"Type de contenu" = Outils[Texte](r, {"contenttype"}),
+		            #"Statut rapport" = Outils[Texte](r, {"status"}),
+		            #"Catégorie" = Outils[Texte](r, {"resultcategory"}),
+		            Message = Outils[Texte](r, {"message"}),
+		            #"ID source" = Outils[Texte](r, {"sourceitemid"}),
+		            #"ID destination" = Outils[Texte](r, {"destinationitemid"}),
+		            Package = Outils[Texte](r, {"packagenumber"}),
+		            #"Job de migration" = Outils[Texte](r, {"migrationjobid"}),
+		            Passage = if passage <> null then passage else if passageFichier <> null then passageFichier else 1,
+		            #"Task ID" = Outils[Texte](r, {"taskid"}),
+		            Poste = Outils[Texte](r, {"devicename"}),
+		            #"Fichier rapport" = fichier,
+		            #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+		        ]),
+		    Typee = Table.FromRecords(Lignes, type table [
+		        Source = nullable text, Destination = nullable text, Nom = nullable text, #"Extension brute" = nullable text,
+		        #"Taille (octets)" = nullable number, #"Type de contenu" = nullable text, #"Statut rapport" = nullable text,
+		        #"Catégorie" = nullable text, Message = nullable text, #"ID source" = nullable text, #"ID destination" = nullable text,
+		        Package = nullable text, #"Job de migration" = nullable text, Passage = number, #"Task ID" = nullable text,
+		        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text]),
+		    // rapports de tâche téléchargés plusieurs fois (avant / après relance) : une ligne par tâche, passage et élément
+		    Resultat = Table.Distinct(Typee, {"Task ID", "Passage", "Source", "Nom", "Statut rapport"})
+		in
+		    Resultat
+	lineageTag: 399d7c96-ef45-57f3-9113-24ec40928786
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+
+expression stg_Echecs =
+		let
+		    Items = fnLireCsv("ItemFailureReport"),
+		    Brut = if Table.IsEmpty(Items) then fnLireCsv("FailureSummary") else Items,
+		    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+		        let
+		            fichier = Outils[Texte](r, {"_fichier"}),
+		            nom = Outils[Texte](r, {"filename", "itemname", "name"}),
+		            passage = Outils[Nombre](r, {"incrementalround", "roundnumber"}),
+		            passageFichier = Outils[PassageDepuisFichier](fichier)
+		        in [
+		            Source = Outils[Texte](r, {"source"}),
+		            Destination = Outils[Texte](r, {"destination"}),
+		            Nom = nom,
+		            #"Extension brute" = Outils[Texte](r, {"extension"}),
+		            #"Taille (octets)" = Outils[Nombre](r, {"filesize", "itemsize", "filesizebytes", "itemsizebytes", "size"}),
+		            #"Type de contenu" = Outils[Texte](r, {"contenttype"}),
+		            #"Statut rapport" = Outils[Texte](r, {"status"}),
+		            #"Catégorie" = Outils[Texte](r, {"resultcategory"}),
+		            Message = Outils[Texte](r, {"message"}),
+		            #"ID source" = Outils[Texte](r, {"sourceitemid"}),
+		            #"ID destination" = Outils[Texte](r, {"destinationitemid"}),
+		            Package = Outils[Texte](r, {"packagenumber"}),
+		            #"Job de migration" = Outils[Texte](r, {"migrationjobid"}),
+		            Passage = if passage <> null then passage else if passageFichier <> null then passageFichier else 1,
+		            #"Task ID" = Outils[Texte](r, {"taskid"}),
+		            Poste = Outils[Texte](r, {"devicename"}),
+		            #"Fichier rapport" = fichier,
+		            #"Dossier rapport" = Outils[Texte](r, {"_dossier"}),
+		            #"Code erreur" = Outils[Texte](r, {"errorcode"})
+		        ]),
+		    Typee = Table.FromRecords(Lignes, type table [
+		        Source = nullable text, Destination = nullable text, Nom = nullable text, #"Extension brute" = nullable text,
+		        #"Taille (octets)" = nullable number, #"Type de contenu" = nullable text, #"Statut rapport" = nullable text,
+		        #"Catégorie" = nullable text, Message = nullable text, #"ID source" = nullable text, #"ID destination" = nullable text,
+		        Package = nullable text, #"Job de migration" = nullable text, Passage = number, #"Task ID" = nullable text,
+		        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text, #"Code erreur" = nullable text]),
+		    Resultat = Table.Distinct(Typee, {"Task ID", "Passage", "Source", "Nom", "Code erreur"})
+		in
+		    Resultat
+	lineageTag: 1c04d2af-1740-54b3-9b77-f9f53056a9df
+	queryGroup: Intermédiaires
+
+	annotation PBI_ResultType = Table
+

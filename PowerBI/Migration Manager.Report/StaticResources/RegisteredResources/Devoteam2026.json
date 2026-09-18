@@ -1,0 +1,323 @@
+{
+  "name": "Devoteam 2026",
+  "dataColors": [
+    "#F8485E",
+    "#4A8CCA",
+    "#5AB891",
+    "#FCC354",
+    "#63238C",
+    "#EC86A3",
+    "#3C3C3A",
+    "#FCA2AE",
+    "#D7EBE7",
+    "#EFEADC"
+  ],
+  "background": "#FFFFFF",
+  "foreground": "#3C3C3A",
+  "tableAccent": "#F8485E",
+  "good": "#5AB891",
+  "neutral": "#FCC354",
+  "bad": "#F8485E",
+  "maximum": "#F8485E",
+  "center": "#FCA2AE",
+  "minimum": "#FDDADE",
+  "null": "#EFEEEE",
+  "hyperlink": "#F8485E",
+  "visitedHyperlink": "#F8485E",
+  "textClasses": {
+    "callout": {
+      "fontFace": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "fontSize": 24,
+      "color": "#F8485E"
+    },
+    "title": {
+      "fontFace": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "fontSize": 11,
+      "color": "#3C3C3A"
+    },
+    "header": {
+      "fontFace": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "fontSize": 12,
+      "color": "#3C3C3A"
+    },
+    "label": {
+      "fontFace": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "fontSize": 10,
+      "color": "#3C3C3A"
+    },
+    "largeTitle": {
+      "fontFace": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "fontSize": 20,
+      "color": "#3C3C3A"
+    }
+  },
+  "visualStyles": {
+    "*": {
+      "*": {
+        "border": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#E5E4E1"
+              }
+            },
+            "radius": 15
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": true
+          }
+        ],
+        "background": [
+          {
+            "show": true,
+            "color": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "padding": [
+          {
+            "top": 10,
+            "bottom": 10,
+            "left": 12,
+            "right": 12
+          }
+        ],
+        "title": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "visualHeader": [
+          {
+            "foreground": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "border": {
+              "solid": {
+                "color": "#E5E4E1"
+              }
+            },
+            "background": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            }
+          }
+        ],
+        "categoryAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "valueAxis": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+            "gridlineColor": {
+              "solid": {
+                "color": "#EFEEEE"
+              }
+            }
+          }
+        ],
+        "legend": [
+          {
+            "labelColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "labels": [
+          {
+            "color": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ]
+      }
+    },
+    "page": {
+      "*": {
+        "background": [
+          {
+            "color": {
+              "solid": {
+                "color": "#EFEEEE"
+              }
+            },
+            "transparency": 0
+          }
+        ],
+        "outspace": [
+          {
+            "color": {
+              "solid": {
+                "color": "#EFEEEE"
+              }
+            },
+            "transparency": 0
+          }
+        ]
+      }
+    },
+    "card": {
+      "*": {
+        "labels": [
+          {
+            "color": {
+              "solid": {
+                "color": "#F8485E"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "categoryLabels": [
+          {
+            "color": {
+              "solid": {
+                "color": "#6E6E6B"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ]
+      }
+    },
+    "tableEx": {
+      "*": {
+        "columnHeaders": [
+          {
+            "backColor": {
+              "solid": {
+                "color": "#FDDADE"
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "values": [
+          {
+            "fontColorPrimary": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "backColorPrimary": {
+              "solid": {
+                "color": "#FFFFFF"
+              }
+            },
+            "fontColorSecondary": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "backColorSecondary": {
+              "solid": {
+                "color": "#F7F7F6"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "grid": [
+          {
+            "gridHorizontalColor": {
+              "solid": {
+                "color": "#E5E4E1"
+              }
+            },
+            "gridVerticalColor": {
+              "solid": {
+                "color": "#E5E4E1"
+              }
+            },
+            "outlineColor": {
+              "solid": {
+                "color": "#E5E4E1"
+              }
+            }
+          }
+        ]
+      }
+    },
+    "slicer": {
+      "*": {
+        "items": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ],
+        "header": [
+          {
+            "fontColor": {
+              "solid": {
+                "color": "#3C3C3A"
+              }
+            },
+            "fontFamily": "Montserrat, Aptos, 'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+          }
+        ]
+      }
+    },
+    "textbox": {
+      "*": {
+        "border": [
+          {
+            "show": false
+          }
+        ],
+        "background": [
+          {
+            "show": false
+          }
+        ],
+        "dropShadow": [
+          {
+            "show": false
+          }
+        ]
+      }
+    }
+  }
+}
