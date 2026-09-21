@@ -1,0 +1,3471 @@
+createOrReplace
+
+	expression DossierRapports = "C:\DemoMigration\Rapports" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+		lineageTag: 97664b6c-3f48-53e6-b21f-fc78f07bca25
+
+		annotation PBI_ResultType = Text
+
+	expression CultureRapports = "fr-FR" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+		lineageTag: 70b0e286-000e-58fb-a679-6508f20f0408
+
+		annotation PBI_ResultType = Text
+
+	expression Outils =
+			let
+			    fChamp = (r as record, noms as list) as any =>
+			        List.First(
+			            List.RemoveNulls(
+			                List.Transform(noms, (n) =>
+			                    let v = Record.FieldOrDefault(r, n, null)
+			                    in if v = null then null else if v is text and Text.Trim(v) = "" then null else v)),
+			            null),
+			    fTexte = (r as record, noms as list) as nullable text =>
+			        let v = fChamp(r, noms) in if v = null then null else Text.Trim(Text.From(v)),
+			    fNombreDepuis = (v as any) as nullable number =>
+			        if v = null then null
+			        else if v is number then v
+			        else
+			            let
+			                t = Text.Remove(Text.From(v), {" ", "#(00A0)", "#(202F)"}),
+			                u = Text.Replace(t, ",", ".")
+			            in
+			                try Number.FromText(u, "en-US") otherwise null,
+			    fNombre = (r as record, noms as list) as nullable number => fNombreDepuis(fChamp(r, noms)),
+			    fDateHeure = (r as record, noms as list) as nullable datetime =>
+			        let v = fTexte(r, noms)
+			        in if v = null then null
+			           else try DateTime.FromText(v, CultureRapports)
+			                otherwise try DateTime.FromText(v, "en-US")
+			                otherwise try DateTime.From(DateTimeZone.FromText(v))
+			                otherwise null,
+			    fDureeSecondes = (r as record, noms as list) as nullable number =>
+			        let v = fTexte(r, noms)
+			        in if v = null then null
+			           else try Duration.TotalSeconds(Duration.FromText(v)) otherwise fNombreDepuis(v),
+			    fOctetsDepuisTexte = (v as any) as nullable number =>
+			        if v = null then null
+			        else if v is number then v
+			        else
+			            let
+			                s = Text.Upper(Text.Trim(Text.From(v))),
+			                unites = {{"TB", 1099511627776}, {"GB", 1073741824}, {"MB", 1048576}, {"KB", 1024}, {"TO", 1099511627776}, {"GO", 1073741824}, {"MO", 1048576}, {"KO", 1024}, {"BYTES", 1}, {"OCTETS", 1}, {"B", 1}},
+			                trouvee = List.First(List.Select(unites, (u) => Text.EndsWith(s, u{0})), null),
+			                nombre = fNombreDepuis(if trouvee = null then s else Text.Trim(Text.Start(s, Text.Length(s) - Text.Length(trouvee{0}))))
+			            in
+			                if nombre = null then null else nombre * (if trouvee = null then 1 else trouvee{1}),
+			    fBooleen = (r as record, noms as list) as nullable logical =>
+			        let v = fTexte(r, noms)
+			        in if v = null then null else List.Contains({"true", "vrai", "1", "yes", "oui"}, Text.Lower(v)),
+			    fContient = (s as text, mots as list) as logical => List.AnyTrue(List.Transform(mots, (m) => Text.Contains(s, m))),
+			    fStatut = (statut as nullable text, categorie as nullable text) as text =>
+			        let s = Text.Lower((if statut = null then "" else statut) & " " & (if categorie = null then "" else categorie))
+			        in if fContient(s, {"fail", "error", "échec", "echec", "erreur"}) then "Échec"
+			           else if fContient(s, {"skip", "filter", "ignor", "exclu"}) then "Ignoré / filtré"
+			           else if fContient(s, {"migrated", "success", "succeeded", "complete", "migré", "termin"}) then "Migré"
+			           else if Text.Trim(s) = "" then "Inconnu"
+			           else "Autre",
+			    fCleChemin = (t as nullable text) as nullable text =>
+			        if t = null or Text.Trim(t) = "" then null
+			        else
+			            let
+			                u = Text.Trim(t),
+			                v = if Text.StartsWith(u, "\\?\UNC\") then "\\" & Text.Middle(u, 8)
+			                    else if Text.StartsWith(u, "\\?\") then Text.Middle(u, 4)
+			                    else u
+			            in
+			                Text.Lower(Text.TrimEnd(v, {"\", "/"})),
+			    fCleUrl = (u as nullable text) as nullable text =>
+			        if u = null or Text.Trim(u) = "" then null
+			        else
+			            let
+			                t = Text.Trim(u),
+			                chemin = if Text.StartsWith(Text.Lower(t), "http") then "/" & Text.AfterDelimiter(t, "/", 2) else t,
+			                decode = Text.Replace(Text.Replace(Text.Replace(chemin, "%20", " "), "%23", "#"), "%25", "%")
+			            in
+			                Text.Lower(Text.TrimEnd(decode, "/")),
+			    fDernierSegment = (u as nullable text) as nullable text =>
+			        if u = null or Text.Trim(u) = "" then null
+			        else List.Last(Text.SplitAny(Text.TrimEnd(Text.Trim(u), {"/", "\"}), "/\")),
+			    fExtension = (ext as nullable text, nom as nullable text) as text =>
+			        let
+			            e = if ext <> null and Text.Trim(ext) <> "" then ext
+			                else if nom <> null and Text.Contains(nom, ".") then Text.AfterDelimiter(nom, ".", {0, RelativePosition.FromEnd})
+			                else null
+			        in
+			            if e = null then "(sans)" else Text.Lower(Text.TrimStart(Text.Trim(e), ".")),
+			    fTypeFichier = (ext as nullable text) as text =>
+			        let e = if ext = null then "" else Text.Lower(ext)
+			        in if List.Contains({"doc", "docx", "docm", "dotx", "odt", "rtf"}, e) then "Word"
+			           else if List.Contains({"xls", "xlsx", "xlsm", "xltx", "csv", "ods"}, e) then "Excel / CSV"
+			           else if List.Contains({"ppt", "pptx", "potx", "odp"}, e) then "PowerPoint"
+			           else if e = "pdf" then "PDF"
+			           else if List.Contains({"jpg", "jpeg", "png", "gif", "bmp", "tif", "tiff", "heic"}, e) then "Image"
+			           else if List.Contains({"mp4", "mov", "avi", "wmv", "mkv"}, e) then "Vidéo"
+			           else if List.Contains({"txt", "md", "eml", "msg", "log"}, e) then "Texte / Mail"
+			           else if List.Contains({"zip", "7z", "rar", "bak", "pst", "tmp", "db"}, e) then "Archive / Sauvegarde / Système"
+			           else "Autre",
+			    fPassageDepuisFichier = (nom as nullable text) as nullable number =>
+			        if nom = null then null
+			        else try Number.FromText(Text.AfterDelimiter(Text.BeforeDelimiter(nom, ".", {0, RelativePosition.FromEnd}), "_R", {0, RelativePosition.FromEnd}), "en-US") otherwise null
+			in
+			    [
+			        Champ = fChamp,
+			        Texte = fTexte,
+			        Nombre = fNombre,
+			        DateHeure = fDateHeure,
+			        DureeSecondes = fDureeSecondes,
+			        Booleen = fBooleen,
+			        OctetsDepuisTexte = fOctetsDepuisTexte,
+			        StatutNormalise = fStatut,
+			        CleChemin = fCleChemin,
+			        CleUrl = fCleUrl,
+			        DernierSegment = fDernierSegment,
+			        Extension = fExtension,
+			        TypeFichier = fTypeFichier,
+			        PassageDepuisFichier = fPassageDepuisFichier
+			    ]
+		lineageTag: 5d6065d4-3667-57df-8758-611ad4fe9b84
+
+		annotation PBI_ResultType = Record
+
+	expression fnLireCsv =
+			(prefixe as text) as table =>
+			let
+			    Fichiers = Folder.Files(DossierRapports),
+			    Filtres = Table.SelectRows(Fichiers, each Text.StartsWith([Name], prefixe, Comparer.OrdinalIgnoreCase) and Text.Lower([Extension]) = ".csv"),
+			    LireUn = (contenu as binary, nom as text, dossier as text, date as any) as table =>
+			        let
+			            Csv = Csv.Document(contenu, [Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv]),
+			            Entetes = Table.PromoteHeaders(Csv, [PromoteAllScalars = true]),
+			            Normalises = Table.TransformColumnNames(Entetes, (n) => Text.Lower(Text.Select(n, {"a".."z", "A".."Z", "0".."9"}))),
+			            AvecFichier = Table.AddColumn(Normalises, "_fichier", (r) => nom, type text),
+			            AvecDossier = Table.AddColumn(AvecFichier, "_dossier", (r) => dossier, type text),
+			            AvecDate = Table.AddColumn(AvecDossier, "_date", (r) => date, type nullable datetime)
+			        in
+			            AvecDate,
+			    Tables = List.Transform(Table.ToRecords(Filtres), (f) => LireUn(f[Content], f[Name], f[Folder Path], f[Date modified])),
+			    Resultat = if List.IsEmpty(Tables) then #table({"_fichier", "_dossier", "_date"}, {}) else Table.Combine(Tables)
+			in
+			    Resultat
+		lineageTag: daff11f1-25a5-514c-8875-c018d141052b
+
+		annotation PBI_ResultType = Function
+
+	expression stg_Correspondance =
+			let
+			    Brut = fnLireCsv("Correspondance_Bibliotheques"),
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) => [
+			        #"Bibliothèque" = Outils[Texte](r, {"bibliotheque"}),
+			        #"Dossier source" = Outils[Texte](r, {"dossiersource"}),
+			        #"Chemin source" = Outils[Texte](r, {"cheminsource"}),
+			        #"Chemin local" = Outils[Texte](r, {"cheminlocal"}),
+			        #"URL cible" = Outils[Texte](r, {"urlcible"})
+			    ]),
+			    Resultat = Table.FromRecords(Lignes, type table [#"Bibliothèque" = nullable text, #"Dossier source" = nullable text, #"Chemin source" = nullable text, #"Chemin local" = nullable text, #"URL cible" = nullable text])
+			in
+			    Resultat
+		lineageTag: eb391938-7bc6-56b1-9088-08214de8bfe1
+
+		annotation PBI_ResultType = Table
+
+	expression stg_Source =
+			let
+			    Brut = fnLireCsv("Inventaire_Source"),
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+			        let nom = Outils[Texte](r, {"nom"}), biblio = Outils[Texte](r, {"bibliotheque"}), anomalies = Outils[Texte](r, {"anomalies"})
+			        in [
+			            #"Chemin complet" = Outils[Texte](r, {"chemincomplet"}),
+			            #"Chemin local" = Outils[Texte](r, {"cheminlocal"}),
+			            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+			            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+			            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+			            #"Chemin cible" = Outils[Texte](r, {"chemincible"}),
+			            Nom = nom,
+			            Extension = Outils[Extension](Outils[Texte](r, {"extension"}), nom),
+			            #"Taille (octets)" = Outils[Nombre](r, {"tailleoctets"}),
+			            #"Date de création" = Outils[DateHeure](r, {"datecreation"}),
+			            #"Date de modification" = Outils[DateHeure](r, {"datemodification"}),
+			            #"Caché" = Outils[Booleen](r, {"cache"}),
+			            #"Système" = Outils[Booleen](r, {"systeme"}),
+			            #"Longueur chemin" = Outils[Nombre](r, {"longueurchemin"}),
+			            #"Longueur chemin cible" = Outils[Nombre](r, {"longueurchemincible"}),
+			            Profondeur = Outils[Nombre](r, {"profondeur"}),
+			            Anomalies = if anomalies = null then "" else anomalies,
+			            Hash = Outils[Texte](r, {"hashsha256"})
+			        ]),
+			    Resultat = Table.FromRecords(Lignes, type table [
+			        #"Chemin complet" = nullable text, #"Chemin local" = nullable text, #"Chemin relatif" = nullable text, #"Dossier racine" = nullable text,
+			        #"Bibliothèque" = text, #"Chemin cible" = nullable text, Nom = nullable text, Extension = text,
+			        #"Taille (octets)" = nullable number, #"Date de création" = nullable datetime, #"Date de modification" = nullable datetime,
+			        #"Caché" = nullable logical, #"Système" = nullable logical, #"Longueur chemin" = nullable number,
+			        #"Longueur chemin cible" = nullable number, Profondeur = nullable number, Anomalies = text, Hash = nullable text])
+			in
+			    Resultat
+		lineageTag: 60dad574-16b0-5c72-93d6-224e2c79a34c
+
+		annotation PBI_ResultType = Table
+
+	expression stg_SharePoint =
+			let
+			    Brut = fnLireCsv("Inventaire_SharePoint"),
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+			        let nom = Outils[Texte](r, {"nom"}), biblio = Outils[Texte](r, {"bibliotheque"})
+			        in [
+			            #"Bibliothèque" = if biblio = null then "(inconnue)" else biblio,
+			            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+			            #"Chemin cible" = Outils[Texte](r, {"chemincible"}),
+			            Nom = nom,
+			            Extension = Outils[Extension](Outils[Texte](r, {"extension"}), nom),
+			            #"Taille (octets)" = Outils[Nombre](r, {"tailleoctets"}),
+			            #"Date de création SharePoint" = Outils[DateHeure](r, {"datecreationsp"}),
+			            #"Date de modification SharePoint" = Outils[DateHeure](r, {"datemodificationsp"}),
+			            #"Date modification fichier" = Outils[DateHeure](r, {"datemodificationfichier"}),
+			            #"Créé par" = Outils[Texte](r, {"creepar"}),
+			            #"Modifié par" = Outils[Texte](r, {"modifiepar"}),
+			            URL = Outils[Texte](r, {"weburl"}),
+			            #"ID élément" = Outils[Texte](r, {"idelement"})
+			        ]),
+			    Resultat = Table.FromRecords(Lignes, type table [
+			        #"Bibliothèque" = text, #"Chemin relatif" = nullable text, #"Chemin cible" = nullable text, Nom = nullable text,
+			        Extension = text, #"Taille (octets)" = nullable number, #"Date de création SharePoint" = nullable datetime,
+			        #"Date de modification SharePoint" = nullable datetime, #"Date modification fichier" = nullable datetime,
+			        #"Créé par" = nullable text, #"Modifié par" = nullable text, URL = nullable text, #"ID élément" = nullable text])
+			in
+			    Resultat
+		lineageTag: aa57cbda-715e-5234-a4f6-6e6e19e56403
+
+		annotation PBI_ResultType = Table
+
+	expression stg_Taches =
+			let
+			    Brut = fnLireCsv("SummaryReport"),
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+			        let passage = Outils[Nombre](r, {"roundnumber", "incrementalround"})
+			        in [
+			            #"Nom de la tâche" = Outils[Texte](r, {"taskname"}),
+			            Source = Outils[Texte](r, {"source", "sourcepath"}),
+			            Destination = Outils[Texte](r, {"destination"}),
+			            #"Statut rapport" = Outils[Texte](r, {"status"}),
+			            #"Octets totaux" = Outils[Nombre](r, {"totalbytes"}),
+			            #"Go totaux" = Outils[Nombre](r, {"totalgb"}),
+			            #"Nombre de fichiers" = Outils[Nombre](r, {"countoffiles"}),
+			            #"Octets migrés" = Outils[Nombre](r, {"migratedbytes"}),
+			            #"Go migrés (rapport)" = Outils[Nombre](r, {"migratedgb", "migratedgbincurrentround"}),
+			            #"Go non migrés" = Outils[Nombre](r, {"gbnotmigrated", "gbnotmigratedincurrentround"}),
+			            #"Éléments analysés" = Outils[Nombre](r, {"totalscanneditems", "totalscanneditem"}),
+			            #"Éléments à migrer" = Outils[Nombre](r, {"totaltobemigrateditems", "totaltobemigrated", "totaltobemigratedincurrentround"}),
+			            #"Éléments migrés" = Outils[Nombre](r, {"migrateditems", "migrateditemsincurrentround"}),
+			            #"Éléments non migrés" = Outils[Nombre](r, {"itemsnotmigrated", "itemsnotmigratedincurrentround"}),
+			            Avertissements = Outils[Nombre](r, {"warningcount", "warningcountincurrentround"}),
+			            #"Début" = Outils[DateHeure](r, {"starttime"}),
+			            Fin = Outils[DateHeure](r, {"endtime"}),
+			            #"Durée (s)" = Outils[DureeSecondes](r, {"duration"}),
+			            #"Go par heure" = Outils[Nombre](r, {"gbhour"}),
+			            Passage = if passage = null then 1 else passage,
+			            Agent = Outils[Texte](r, {"agent", "devicename"}),
+			            #"Groupe d'agents" = Outils[Texte](r, {"agentgroup"}),
+			            #"Raison d'échec" = Outils[Texte](r, {"taskfailurereason"}),
+			            #"Task ID" = Outils[Texte](r, {"taskid"}),
+			            #"Fichier rapport" = Outils[Texte](r, {"_fichier"}),
+			            #"Date du fichier" = Record.FieldOrDefault(r, "_date", null)
+			        ]),
+			    Typee = Table.FromRecords(Lignes, type table [
+			        #"Nom de la tâche" = nullable text, Source = nullable text, Destination = nullable text, #"Statut rapport" = nullable text,
+			        #"Octets totaux" = nullable number, #"Go totaux" = nullable number, #"Nombre de fichiers" = nullable number, #"Octets migrés" = nullable number,
+			        #"Go migrés (rapport)" = nullable number, #"Go non migrés" = nullable number, #"Éléments analysés" = nullable number,
+			        #"Éléments à migrer" = nullable number, #"Éléments migrés" = nullable number, #"Éléments non migrés" = nullable number,
+			        Avertissements = nullable number, #"Début" = nullable datetime, Fin = nullable datetime, #"Durée (s)" = nullable number,
+			        #"Go par heure" = nullable number, Passage = number, Agent = nullable text, #"Groupe d'agents" = nullable text,
+			        #"Raison d'échec" = nullable text, #"Task ID" = nullable text, #"Fichier rapport" = nullable text, #"Date du fichier" = nullable datetime]),
+			    // un même Summary report peut être téléchargé plusieurs fois : on garde la version la plus récente de chaque tâche
+			    Tries = Table.Buffer(Table.Sort(Typee, {{"Date du fichier", Order.Descending}})),
+			    AvecId = Table.Distinct(Table.SelectRows(Tries, each [Task ID] <> null), {"Task ID", "Passage"}),
+			    SansId = Table.SelectRows(Tries, each [Task ID] = null),
+			    Resultat = Table.RemoveColumns(Table.Combine({AvecId, SansId}), {"Date du fichier"})
+			in
+			    Resultat
+		lineageTag: 0c6dba3b-7140-5eac-9c1b-3dcc8872dee6
+
+		annotation PBI_ResultType = Table
+
+	expression stg_Elements =
+			let
+			    Brut = fnLireCsv("ItemReport"),
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+			        let
+			            fichier = Outils[Texte](r, {"_fichier"}),
+			            nom = Outils[Texte](r, {"filename", "itemname", "name"}),
+			            passage = Outils[Nombre](r, {"incrementalround", "roundnumber"}),
+			            passageFichier = Outils[PassageDepuisFichier](fichier)
+			        in [
+			            Source = Outils[Texte](r, {"source"}),
+			            Destination = Outils[Texte](r, {"destination"}),
+			            Nom = nom,
+			            #"Extension brute" = Outils[Texte](r, {"extension"}),
+			            #"Taille (octets)" = Outils[Nombre](r, {"filesize", "itemsize", "filesizebytes", "itemsizebytes", "size"}),
+			            #"Type de contenu" = Outils[Texte](r, {"contenttype"}),
+			            #"Statut rapport" = Outils[Texte](r, {"status"}),
+			            #"Catégorie" = Outils[Texte](r, {"resultcategory"}),
+			            Message = Outils[Texte](r, {"message"}),
+			            #"ID source" = Outils[Texte](r, {"sourceitemid"}),
+			            #"ID destination" = Outils[Texte](r, {"destinationitemid"}),
+			            Package = Outils[Texte](r, {"packagenumber"}),
+			            #"Job de migration" = Outils[Texte](r, {"migrationjobid"}),
+			            Passage = if passage <> null then passage else if passageFichier <> null then passageFichier else 1,
+			            #"Task ID" = Outils[Texte](r, {"taskid"}),
+			            Poste = Outils[Texte](r, {"devicename"}),
+			            #"Fichier rapport" = fichier,
+			            #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+			        ]),
+			    Typee = Table.FromRecords(Lignes, type table [
+			        Source = nullable text, Destination = nullable text, Nom = nullable text, #"Extension brute" = nullable text,
+			        #"Taille (octets)" = nullable number, #"Type de contenu" = nullable text, #"Statut rapport" = nullable text,
+			        #"Catégorie" = nullable text, Message = nullable text, #"ID source" = nullable text, #"ID destination" = nullable text,
+			        Package = nullable text, #"Job de migration" = nullable text, Passage = number, #"Task ID" = nullable text,
+			        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text]),
+			    // rapports de tâche téléchargés plusieurs fois (avant / après relance) : une ligne par tâche, passage et élément
+			    Resultat = Table.Distinct(Typee, {"Task ID", "Passage", "Source", "Nom", "Statut rapport"})
+			in
+			    Resultat
+		lineageTag: 399d7c96-ef45-57f3-9113-24ec40928786
+
+		annotation PBI_ResultType = Table
+
+	expression stg_Echecs =
+			let
+			    Items = fnLireCsv("ItemFailureReport"),
+			    Brut = if Table.IsEmpty(Items) then fnLireCsv("FailureSummary") else Items,
+			    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+			        let
+			            fichier = Outils[Texte](r, {"_fichier"}),
+			            nom = Outils[Texte](r, {"filename", "itemname", "name"}),
+			            passage = Outils[Nombre](r, {"incrementalround", "roundnumber"}),
+			            passageFichier = Outils[PassageDepuisFichier](fichier)
+			        in [
+			            Source = Outils[Texte](r, {"source"}),
+			            Destination = Outils[Texte](r, {"destination"}),
+			            Nom = nom,
+			            #"Extension brute" = Outils[Texte](r, {"extension"}),
+			            #"Taille (octets)" = Outils[Nombre](r, {"filesize", "itemsize", "filesizebytes", "itemsizebytes", "size"}),
+			            #"Type de contenu" = Outils[Texte](r, {"contenttype"}),
+			            #"Statut rapport" = Outils[Texte](r, {"status"}),
+			            #"Catégorie" = Outils[Texte](r, {"resultcategory"}),
+			            Message = Outils[Texte](r, {"message"}),
+			            #"ID source" = Outils[Texte](r, {"sourceitemid"}),
+			            #"ID destination" = Outils[Texte](r, {"destinationitemid"}),
+			            Package = Outils[Texte](r, {"packagenumber"}),
+			            #"Job de migration" = Outils[Texte](r, {"migrationjobid"}),
+			            Passage = if passage <> null then passage else if passageFichier <> null then passageFichier else 1,
+			            #"Task ID" = Outils[Texte](r, {"taskid"}),
+			            Poste = Outils[Texte](r, {"devicename"}),
+			            #"Fichier rapport" = fichier,
+			            #"Dossier rapport" = Outils[Texte](r, {"_dossier"}),
+			            #"Code erreur" = Outils[Texte](r, {"errorcode"})
+			        ]),
+			    Typee = Table.FromRecords(Lignes, type table [
+			        Source = nullable text, Destination = nullable text, Nom = nullable text, #"Extension brute" = nullable text,
+			        #"Taille (octets)" = nullable number, #"Type de contenu" = nullable text, #"Statut rapport" = nullable text,
+			        #"Catégorie" = nullable text, Message = nullable text, #"ID source" = nullable text, #"ID destination" = nullable text,
+			        Package = nullable text, #"Job de migration" = nullable text, Passage = number, #"Task ID" = nullable text,
+			        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text, #"Code erreur" = nullable text]),
+			    Resultat = Table.Distinct(Typee, {"Task ID", "Passage", "Source", "Nom", "Code erreur"})
+			in
+			    Resultat
+		lineageTag: 1c04d2af-1740-54b3-9b77-f9f53056a9df
+
+		annotation PBI_ResultType = Table
+
+
+	table _Mesures
+		lineageTag: a8e5e853-dc07-5a9e-a43c-5364c0bd5a52
+
+		measure 'Fichiers source' = COUNTROWS('Inventaire Source') + 0
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: 6f1628eb-5c8d-5622-b736-d563cce9e7a8
+
+		measure 'Éléments traités' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE()) + 0
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: 59cd3b27-1389-52b8-93cb-ea016c570d15
+
+		measure 'Fichiers migrés' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Migré") + 0
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: 8d9925a1-ae2b-57f2-b5ca-43bc9a05e962
+
+		measure 'Fichiers en échec' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Échec") + 0
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: be2fca73-ea6e-5987-98f9-58d1357b694f
+
+		measure 'Fichiers ignorés' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Ignoré / filtré") + 0
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: 44a052b3-cbec-54bb-a96f-891ea420dc06
+
+		measure 'Taux de réussite' = DIVIDE([Fichiers migrés], [Fichiers migrés] + [Fichiers en échec])
+			formatString: 0.0%
+			displayFolder: 1. Synthèse
+			lineageTag: a1500606-4b2f-56a7-8a5f-e3084b44c73f
+
+		measure 'Volume migré (Mo)' = DIVIDE(CALCULATE(SUM('Elements Migration'[Taille (octets)]), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] = "Migré"), 1048576) + 0
+			formatString: #,0.0
+			displayFolder: 1. Synthèse
+			lineageTag: 080ef4fa-e286-5a0d-8fcd-5e8e921af382
+
+		measure 'Débit moyen (Go/h)' = DIVIDE(SUM('Taches Migration'[Go migrés]), SUM('Taches Migration'[Durée (s)]) / 3600)
+			formatString: 0.00
+			displayFolder: 1. Synthèse
+			lineageTag: 764ddd02-a265-57fd-a910-738b520a7464
+
+		measure 'Durée de la migration' =
+				VAR _debut = MIN('Taches Migration'[Début])
+				VAR _fin = MAX('Taches Migration'[Fin])
+				VAR _s = IF(ISBLANK(_debut) || ISBLANK(_fin), SUM('Taches Migration'[Durée (s)]), ROUND((_fin - _debut) * 86400, 0))
+				RETURN
+				    IF(ISBLANK(_s), "-", FORMAT(INT(_s / 3600), "00") & ":" & FORMAT(INT(MOD(_s, 3600) / 60), "00") & ":" & FORMAT(MOD(_s, 60), "00"))
+			displayFolder: 1. Synthèse
+			lineageTag: d0d6a45b-ff17-5bcc-8d40-aea52fcff6a1
+
+		measure 'Tâches de migration' = DISTINCTCOUNT('Taches Migration'[Task ID]) + 0
+			formatString: 0
+			displayFolder: 1. Synthèse
+			lineageTag: a8bff134-e2bc-5303-a1bb-a4ee68ff1690
+
+		measure 'Passages incrémentiels' = MAX('Elements Migration'[Passage]) + 0
+			formatString: 0
+			displayFolder: 1. Synthèse
+			lineageTag: 47ef657b-fc82-5dbe-9ba1-6dd09c967cbe
+
+		measure 'Agents utilisés' = CALCULATE(DISTINCTCOUNT('Taches Migration'[Agent]), NOT ISBLANK('Taches Migration'[Agent])) + 0
+			formatString: 0
+			displayFolder: 1. Synthèse
+			lineageTag: 0aac8f5e-0839-5b34-a9c7-18a0046c6f10
+
+		measure 'Tâches avec erreurs' = CALCULATE(COUNTROWS('Taches Migration'), 'Taches Migration'[Statut] <> "Terminé") + 0
+			formatString: 0
+			displayFolder: 1. Synthèse
+			lineageTag: 6bdcedaf-09af-5d5c-917f-592ae5f9e027
+
+		measure 'Début de migration' = MIN('Taches Migration'[Début])
+			formatString: dd/MM/yyyy HH:mm
+			displayFolder: 1. Synthèse
+			lineageTag: b3a04793-caeb-5dc7-ba3b-0d36205fe181
+
+		measure 'Fin de migration' = MAX('Taches Migration'[Fin])
+			formatString: dd/MM/yyyy HH:mm
+			displayFolder: 1. Synthèse
+			lineageTag: 38311a3e-63dc-5e45-ad1f-a50208ad1bcf
+
+		measure 'Progression pipeline' = CALCULATE(SUM('Pipeline Migration'[Nombre]), 'Pipeline Migration'[Type] = "Progression")
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: 80e2bdd7-0e28-5909-ac94-7a7aaf495574
+
+		measure 'Échecs pipeline' = CALCULATE(SUM('Pipeline Migration'[Nombre]), 'Pipeline Migration'[Type] = "Échec")
+			formatString: #,0
+			displayFolder: 1. Synthèse
+			lineageTag: e44ba798-9197-56ed-b253-b974a16b4875
+
+		measure 'Non migrés (liste)' = CALCULATE(COUNTROWS('Elements Migration'), 'Elements Migration'[Dernier passage] = TRUE(), 'Elements Migration'[Statut] <> "Migré")
+			formatString: #,0
+			displayFolder: 2. Échecs
+			lineageTag: 68b9bdd9-2ba5-5d61-a4f5-177c1956cf40
+
+		measure 'Échecs (lignes)' = CALCULATE(COUNTROWS('Echecs Migration'), 'Echecs Migration'[Dernier passage] = TRUE())
+			formatString: #,0
+			displayFolder: 2. Échecs
+			lineageTag: 3f7a6bbc-cd98-56fb-9a8e-1ed94eb398c7
+
+		measure 'Codes erreur distincts' = CALCULATE(DISTINCTCOUNT('Echecs Migration'[Code erreur]), NOT ISBLANK('Echecs Migration'[Code erreur])) + 0
+			formatString: 0
+			displayFolder: 2. Échecs
+			lineageTag: 0bed48a3-35f9-59b8-ab04-ec2f69809b6f
+
+		measure 'Échecs corrigés par relance' = CALCULATE(COUNTROWS('Echecs Migration'), 'Echecs Migration'[Corrigé par relance] = TRUE()) + 0
+			formatString: #,0
+			displayFolder: 2. Échecs
+			lineageTag: bb9e88ac-0d88-5a89-a446-3d15e6005666
+
+		measure 'Volume source (Mo)' = DIVIDE(SUM('Inventaire Source'[Taille (octets)]), 1048576) + 0
+			formatString: #,0.0
+			displayFolder: 3. Inventaire
+			lineageTag: cdc72d54-1feb-51b0-ac44-1a5983d3cf5e
+
+		measure 'Fichiers avec anomalie' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Avec anomalie] = TRUE()) + 0
+			formatString: #,0
+			displayFolder: 3. Inventaire
+			lineageTag: 724e64f0-08ef-5394-b50d-cdb1f9d3ffe0
+
+		measure '% fichiers avec anomalie' = DIVIDE([Fichiers avec anomalie], [Fichiers source])
+			formatString: 0.0%
+			displayFolder: 3. Inventaire
+			lineageTag: 10d44778-9db5-5f56-a834-57091f2aa182
+
+		measure 'Anomalies détectées' = COUNTROWS('Anomalies Source') + 0
+			formatString: #,0
+			displayFolder: 3. Inventaire
+			lineageTag: 1d27516e-8e6c-5cfa-b5e9-3c3f0df6db69
+
+		measure 'Fichiers en doublon' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Copie en doublon] = TRUE()) + 0
+			formatString: #,0
+			displayFolder: 3. Inventaire
+			lineageTag: 408c70e0-25a8-5c5f-9787-8dca85447fbb
+
+		measure 'Volume des doublons (Mo)' = DIVIDE(CALCULATE(SUM('Inventaire Source'[Taille (octets)]), 'Inventaire Source'[Copie en doublon] = TRUE()), 1048576) + 0
+			formatString: #,0.0
+			displayFolder: 3. Inventaire
+			lineageTag: 12953eaa-3813-5c56-abda-ac2603ed1e44
+
+		measure 'Fichiers de plus de 3 ans' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Âge (années)] >= 3) + 0
+			formatString: #,0
+			displayFolder: 3. Inventaire
+			lineageTag: 2aeb16cd-739f-5a2d-843b-0634d700eeea
+
+		measure '% fichiers de plus de 3 ans' = DIVIDE([Fichiers de plus de 3 ans], [Fichiers source])
+			formatString: 0.0%
+			displayFolder: 3. Inventaire
+			lineageTag: 3a170665-52b9-59ac-a0cf-a1680e58bd79
+
+		measure 'Fichiers dans SharePoint' = COUNTROWS('Inventaire SharePoint') + 0
+			formatString: #,0
+			displayFolder: 4. Rapprochement
+			lineageTag: b9c73bba-511a-5eac-ae9b-93ba5c766d07
+
+		measure 'Volume SharePoint (Mo)' = DIVIDE(SUM('Inventaire SharePoint'[Taille (octets)]), 1048576) + 0
+			formatString: #,0.0
+			displayFolder: 4. Rapprochement
+			lineageTag: c678d7c9-1415-5365-a0e5-d911852d1db2
+
+		measure 'Écart source vs SharePoint' = [Fichiers source] - [Fichiers dans SharePoint]
+			formatString: #,0
+			displayFolder: 4. Rapprochement
+			lineageTag: cf4addd2-bb08-50d1-97ec-56d267d14045
+
+		measure 'Fichiers source présents dans SharePoint' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Présent") + 0
+			formatString: #,0
+			displayFolder: 4. Rapprochement
+			lineageTag: 71b14029-28a5-5a3d-af3e-6cde8d46ec27
+
+		measure 'Taux de couverture SharePoint' = IF(CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Non vérifié") = COUNTROWS('Inventaire Source'), BLANK(), DIVIDE([Fichiers source présents dans SharePoint], [Fichiers source]))
+			formatString: 0.0%
+			displayFolder: 4. Rapprochement
+			lineageTag: e6f37efc-05a5-5182-a8bd-7dca3dc1e399
+
+		measure 'Absents de SharePoint (liste)' = CALCULATE(COUNTROWS('Inventaire Source'), 'Inventaire Source'[Présence SharePoint] = "Absent")
+			formatString: #,0
+			displayFolder: 4. Rapprochement
+			lineageTag: 69dc2a5e-7255-5ae7-85ed-57745d7465fa
+
+		measure 'Dates de modification conservées' = DIVIDE(CALCULATE(COUNTROWS('Inventaire SharePoint'), 'Inventaire SharePoint'[Date conservée] = "Oui"), CALCULATE(COUNTROWS('Inventaire SharePoint'), 'Inventaire SharePoint'[Date conservée] <> "n/a"))
+			formatString: 0.0%
+			displayFolder: 4. Rapprochement
+			lineageTag: 78bc73dd-bd7f-55ed-9c87-6b03c8b1a230
+
+		measure 'Rapports collectés' = COUNTROWS('Fichiers de rapport') + 0
+			formatString: #,0
+			displayFolder: 5. Rapports
+			lineageTag: 043ebcd3-b0ae-5385-a98b-dc5d3d53ad78
+
+		measure 'Types de rapports' = DISTINCTCOUNT('Fichiers de rapport'[Type de rapport]) + 0
+			formatString: 0
+			displayFolder: 5. Rapports
+			lineageTag: 0a09f761-d84a-5b74-b403-629bdeb5a67e
+
+		measure 'Sources scannées' = COUNTROWS('Scan Migration Manager') + 0
+			formatString: 0
+			displayFolder: 5. Rapports
+			lineageTag: 2dea2f90-02d7-51e3-b590-cd0d4da604f2
+
+		measure 'Sources scannées avec avertissement' = CALCULATE(COUNTROWS('Scan Migration Manager'), 'Scan Migration Manager'[État] <> "🟢 Prêt") + 0
+			formatString: 0
+			displayFolder: 5. Rapports
+			lineageTag: b48fcaab-1a50-5976-8adb-4d937d039821
+
+		measure 'Lignes de rapport migration' = COUNTROWS('Elements Migration') + COUNTROWS('Taches Migration') + COUNTROWS('Echecs Migration') + 0
+			formatString: #,0
+			displayFolder: 5. Rapports
+			lineageTag: 3ea97b9f-16c8-55a1-a841-0472cdb5b7a3
+
+		measure 'Fichiers audités' = SUM('Audit Synthese'[Fichiers]) + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 633750d7-5f88-5829-821c-d07c7094ca0f
+
+		measure 'Volume audité (Mo)' = SUM('Audit Synthese'[Volume (Mo)]) + 0
+			formatString: #,0.0
+			displayFolder: 6. Migrabilité
+			lineageTag: 476aeb4e-5f00-5ee8-b783-6eec173e2bdc
+
+		measure 'Fichiers bloqués (audit)' = SUM('Audit Synthese'[Fichiers bloqués]) + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 5f32dbc2-35c2-588e-b615-e1b331a53569
+
+		measure 'Fichiers migrables (audit)' = SUM('Audit Synthese'[Fichiers migrables]) + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 5f30ea47-da56-5aa3-93a5-15947b52b0be
+
+		measure '% fichiers migrables' = DIVIDE([Fichiers migrables (audit)], [Fichiers audités])
+			formatString: 0.0%
+			displayFolder: 6. Migrabilité
+			lineageTag: 70efbff6-2ab5-50d8-af8f-8ca1a283f132
+
+		measure 'Constats bloquants' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "Bloquant") + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 49c65583-220d-57f8-af5b-50c526a9858a
+
+		measure 'Constats à traiter' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "À traiter") + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 83dad905-5fee-54dc-ab58-091bbaac4928
+
+		measure 'Constats information' = CALCULATE(COUNTROWS('Audit Constats'), 'Audit Constats'[Gravité] = "Information") + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 367937b9-4068-5cb0-b1e9-848360dfe89a
+
+		measure 'Constats par contrôle' = COUNTROWS('Audit Constats') + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 5677874f-6292-540b-9359-30758f92f3e1
+
+		measure 'Contrôles en défaut' = DISTINCTCOUNT('Audit Constats'[Code]) + 0
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: b4c58f2c-de46-5f09-b131-8c5ad0e09827
+
+		measure 'Contrôles conformes' = COUNTROWS('Audit Controles') - [Contrôles en défaut]
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: ed671bef-ab67-517e-98d4-dc1e8eaf076b
+
+		measure 'Bibliothèques rouges' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Rouge") + 0
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: 252d5ce2-0cf0-5cff-851f-0bbe6b55b94f
+
+		measure 'Bibliothèques oranges' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Orange") + 0
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: a96d12e8-5806-5f8e-b27e-3414e23a30d2
+
+		measure 'Bibliothèques vertes' = CALCULATE(COUNTROWS('Audit Synthese'), 'Audit Synthese'[Feu] = "Vert") + 0
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: 6a7ece7e-2a79-53ca-8e49-bbcda9dd331c
+
+		measure 'Feu global' =
+				IF(COUNTROWS('Audit Synthese') = 0, "Audit absent",
+				    IF([Bibliothèques rouges] > 0, "🔴 Rouge",
+				        IF([Bibliothèques oranges] > 0, "🟠 Orange", "🟢 Vert")))
+			displayFolder: 6. Migrabilité
+			lineageTag: e7ac20d5-ae62-54e7-a5ab-96bd07f926c0
+
+		measure 'Résultat du contrôle' =
+				VAR _n = COUNTROWS('Audit Constats')
+				VAR _g = SELECTEDVALUE('Audit Controles'[Gravité])
+				RETURN
+				    IF(ISBLANK(_n), "🟢 Conforme",
+				        SWITCH(_g, "Bloquant", "🔴 Bloquant", "À traiter", "🟠 À traiter", "🔵 Information"))
+			displayFolder: 6. Migrabilité
+			lineageTag: b447c4f1-0a34-5bf0-b931-7b6b3446fe42
+
+		measure 'Permissions uniques (audit)' = SUM('Audit Synthese'[Permissions uniques]) + 0
+			formatString: #,0
+			displayFolder: 6. Migrabilité
+			lineageTag: 8b1b9124-a470-5642-aade-26b1d68f2c12
+
+		measure 'Refus et SID orphelins' = SUM('Audit Synthese'[Refus (Deny)]) + SUM('Audit Synthese'[SID orphelins]) + 0
+			formatString: 0
+			displayFolder: 6. Migrabilité
+			lineageTag: 0e1a9d17-b186-5b34-acca-89337f0a8418
+
+		measure 'Entrées ACL explicites' = COUNTROWS('Audit Permissions') + 0
+			formatString: #,0
+			displayFolder: 7. Autorisations
+			lineageTag: dd2f1018-bda0-5018-a948-fc518f3bb050
+
+		measure 'Refus (Deny)' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Type accès] = "Deny") + 0
+			formatString: 0
+			displayFolder: 7. Autorisations
+			lineageTag: 7d39197b-355f-559e-910a-de32199f9f36
+
+		measure 'Entrées orphelines' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Orpheline] = TRUE()) + 0
+			formatString: 0
+			displayFolder: 7. Autorisations
+			lineageTag: 319c14a6-5299-5ca4-b357-aad9798c6ce0
+
+		measure 'Comptes locaux ou intégrés' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Compte local ou intégré] = TRUE()) + 0
+			formatString: 0
+			displayFolder: 7. Autorisations
+			lineageTag: b9766289-4501-525a-8246-e4fce79383f2
+
+		measure 'Entrées non converties' = CALCULATE(COUNTROWS('Audit Permissions'), 'Audit Permissions'[Correspondance SharePoint] IN {"Non migré (refus)", "Droit avancé non converti"}) + 0
+			formatString: 0
+			displayFolder: 7. Autorisations
+			lineageTag: ae13374e-2a69-5647-b4c7-76421e46892d
+
+		column Mesures
+			dataType: string
+			isHidden
+			lineageTag: b9ee4314-5c8a-5aa7-bc1e-2e7e60386994
+			summarizeBy: none
+			sourceColumn: Mesures
+
+			annotation SummarizationSetBy = Automatic
+
+		partition _Mesures = m
+			mode: import
+			source =
+					let
+					    Source = #table(type table [Mesures = text], {})
+					in
+					    Source
+
+		annotation PBI_ResultType = Table
+
+
+	table Bibliotheques
+		lineageTag: 48a8230d-31a5-5359-b297-440fefd087fc
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: 899840b6-f1ee-5209-9cc8-9d47b964450c
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+			sortByColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier source'
+			dataType: string
+			lineageTag: 1040c2d0-39fb-5292-a49c-3455ab87255c
+			summarizeBy: none
+			sourceColumn: Dossier source
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin source'
+			dataType: string
+			lineageTag: 15e83775-221f-58eb-bf4a-de8d122c9c76
+			summarizeBy: none
+			sourceColumn: Chemin source
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin local'
+			dataType: string
+			lineageTag: c45191b1-765d-5431-bd4a-0210d4de561a
+			summarizeBy: none
+			sourceColumn: Chemin local
+
+			annotation SummarizationSetBy = User
+
+		column 'URL cible'
+			dataType: string
+			lineageTag: a012f1e1-9a2b-5c8d-bcff-7bfa4d3f6fbc
+			summarizeBy: none
+			sourceColumn: URL cible
+
+			annotation SummarizationSetBy = User
+
+		column Ordre
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: 5ba52984-3be8-5ac7-b334-98d299b677d2
+			summarizeBy: none
+			sourceColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		partition Bibliotheques = m
+			mode: import
+			source =
+					let
+					    Base = Table.SelectRows(stg_Correspondance, each [#"Bibliothèque"] <> null and [#"Bibliothèque"] <> ""),
+					    BaseUnique = Table.Distinct(Base, {"Bibliothèque", Comparer.OrdinalIgnoreCase}),
+					    Autres = List.Distinct(List.Select(stg_Source[#"Bibliothèque"] & stg_SharePoint[#"Bibliothèque"], each _ <> null and _ <> ""), Comparer.OrdinalIgnoreCase),
+					    Manquantes = List.Select(Autres, (b) => not List.Contains(BaseUnique[#"Bibliothèque"], b, Comparer.OrdinalIgnoreCase)),
+					    Ajout = Table.FromRecords(
+					        List.Transform(Manquantes, (b) => [#"Bibliothèque" = b, #"Dossier source" = null, #"Chemin source" = null, #"Chemin local" = null, #"URL cible" = null]),
+					        Value.Type(BaseUnique)),
+					    Tout = Table.Combine({BaseUnique, Ajout}),
+					    Resultat = Table.AddIndexColumn(Tout, "Ordre", 1, 1, Int64.Type)
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Taches Migration'
+		lineageTag: cae7f369-f318-503e-b936-bc3de264c2e9
+
+		column 'Nom de la tâche'
+			dataType: string
+			lineageTag: 0135ac0b-398a-5baf-8c4c-9473d3964ce0
+			summarizeBy: none
+			sourceColumn: Nom de la tâche
+
+			annotation SummarizationSetBy = User
+
+		column Source
+			dataType: string
+			lineageTag: 68ffbc78-ea67-5d3e-ac9f-3e1b709f01b8
+			summarizeBy: none
+			sourceColumn: Source
+
+			annotation SummarizationSetBy = User
+
+		column Destination
+			dataType: string
+			lineageTag: 0783f14e-257f-5fb0-9252-a96f5d35794c
+			summarizeBy: none
+			sourceColumn: Destination
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut rapport'
+			dataType: string
+			lineageTag: e9c61b49-60ea-5484-b6fc-2e382e337e43
+			summarizeBy: none
+			sourceColumn: Statut rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Octets totaux'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 4b967478-aedf-5900-a042-6fc312009ae8
+			summarizeBy: none
+			sourceColumn: Octets totaux
+
+			annotation SummarizationSetBy = User
+
+		column 'Go totaux'
+			dataType: double
+			formatString: 0.0000
+			lineageTag: 440b035e-b28f-52fc-bde8-f7cd5399f6ce
+			summarizeBy: none
+			sourceColumn: Go totaux
+
+			annotation SummarizationSetBy = User
+
+		column 'Nombre de fichiers'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: cda10358-56a3-57c6-93ab-ad48e4eb85b3
+			summarizeBy: none
+			sourceColumn: Nombre de fichiers
+
+			annotation SummarizationSetBy = User
+
+		column 'Octets migrés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 4c3d1f30-a1a6-5581-bc1b-81b9e35707f6
+			summarizeBy: none
+			sourceColumn: Octets migrés
+
+			annotation SummarizationSetBy = User
+
+		column 'Go migrés (rapport)'
+			dataType: double
+			isHidden
+			formatString: 0.0000
+			lineageTag: 9584cc4e-6ccf-5368-9000-7b6c97fbdec8
+			summarizeBy: none
+			sourceColumn: Go migrés (rapport)
+
+			annotation SummarizationSetBy = User
+
+		column 'Go non migrés'
+			dataType: double
+			formatString: 0.0000
+			lineageTag: de0f06f9-e03b-516a-8eeb-add625991729
+			summarizeBy: none
+			sourceColumn: Go non migrés
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments analysés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 9fed7dab-1236-5b6e-8c3d-416b57577473
+			summarizeBy: none
+			sourceColumn: Éléments analysés
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments à migrer'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 5bb04f7f-40fd-58b4-af74-f55abc3c7523
+			summarizeBy: none
+			sourceColumn: Éléments à migrer
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments migrés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 26e7bf73-934b-53e4-ad27-2078cc16a217
+			summarizeBy: none
+			sourceColumn: Éléments migrés
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments non migrés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: a797ce07-bf9c-560d-a512-7bb4eb929dba
+			summarizeBy: none
+			sourceColumn: Éléments non migrés
+
+			annotation SummarizationSetBy = User
+
+		column Avertissements
+			dataType: double
+			formatString: #,0.##
+			lineageTag: b3f50c47-2544-57de-b257-70460d06f400
+			summarizeBy: none
+			sourceColumn: Avertissements
+
+			annotation SummarizationSetBy = User
+
+		column 'Début'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 58ae01cd-5ea2-5770-9524-268df79ffbab
+			summarizeBy: none
+			sourceColumn: Début
+
+			annotation SummarizationSetBy = User
+
+		column Fin
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 81c1cb3e-ab27-5454-9d5e-cb82d727967f
+			summarizeBy: none
+			sourceColumn: Fin
+
+			annotation SummarizationSetBy = User
+
+		column 'Durée (s)'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 3826081f-6d35-5854-8d8e-d3a36b33620e
+			summarizeBy: none
+			sourceColumn: Durée (s)
+
+			annotation SummarizationSetBy = User
+
+		column 'Go par heure'
+			dataType: double
+			formatString: 0.00
+			lineageTag: 0939eafe-5c1a-556d-9a39-5e3acb07bd11
+			summarizeBy: none
+			sourceColumn: Go par heure
+
+			annotation SummarizationSetBy = User
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: e74d6fac-ba0a-54b5-a512-e6fcd64a08d7
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column Agent
+			dataType: string
+			lineageTag: 79f04132-7a23-50e0-9f3c-e439d19d92ba
+			summarizeBy: none
+			sourceColumn: Agent
+
+			annotation SummarizationSetBy = User
+
+		column 'Groupe d''agents'
+			dataType: string
+			lineageTag: 75f4041f-d317-50ba-b067-afa50c96fb3a
+			summarizeBy: none
+			sourceColumn: Groupe d'agents
+
+			annotation SummarizationSetBy = User
+
+		column 'Raison d''échec'
+			dataType: string
+			lineageTag: 2664726e-e97c-5fcc-8374-d262eec1a4f8
+			summarizeBy: none
+			sourceColumn: Raison d'échec
+
+			annotation SummarizationSetBy = User
+
+		column 'Task ID'
+			dataType: string
+			lineageTag: 17d6c890-4791-528e-96de-aca090c742d5
+			summarizeBy: none
+			sourceColumn: Task ID
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: e1aaf4b9-3e3f-5130-80cb-28f8e9c2824a
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: 49bca576-f347-515b-9f01-20f59898c8ac
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column Statut
+			dataType: string
+			lineageTag: 400a9661-4f31-5251-9c38-83f884f61ef8
+			summarizeBy: none
+			sourceColumn: Statut
+
+			annotation SummarizationSetBy = User
+
+		column 'Go migrés'
+			dataType: double
+			formatString: 0.0000
+			lineageTag: 45f3069a-dc7e-5879-a2ee-2269f51b0e4f
+			summarizeBy: none
+			sourceColumn: Go migrés
+
+			annotation SummarizationSetBy = User
+
+		column 'Durée (min)'
+			dataType: double
+			formatString: 0.0
+			lineageTag: 6e701537-6d3f-555e-a38a-b57278b5267f
+			summarizeBy: none
+			sourceColumn: Durée (min)
+
+			annotation SummarizationSetBy = User
+
+		column 'Tâche'
+			dataType: string
+			lineageTag: a6142aec-0b4b-500d-92ee-75983ec26785
+			summarizeBy: none
+			sourceColumn: Tâche
+
+			annotation SummarizationSetBy = User
+
+		partition 'Taches Migration' = m
+			mode: import
+			source =
+					let
+					    Corr = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(
+					                    Table.SelectRows(
+					                        Table.AddColumn(stg_Correspondance, "_cle", each Outils[CleChemin]([Chemin source]), type nullable text),
+					                        each [_cle] <> null),
+					                    {"_cle", "Bibliothèque"}),
+					                {"_cle"}),
+					            {{"_cle", "_cleCorr"}, {"Bibliothèque", "_biblioCorr"}})),
+					    Base = Table.Buffer(Table.AddColumn(stg_Taches, "_cle", each Outils[CleChemin]([Source]), type nullable text)),
+					    Joint = Table.Join(Base, "_cle", Corr, "_cleCorr", JoinKind.LeftOuter),
+					    Biblio = Table.AddColumn(Joint, "Bibliothèque", each
+					        if [_biblioCorr] <> null then [_biblioCorr]
+					        else let s = Outils[DernierSegment]([Destination]) in if s <> null then s else "(inconnue)", type text),
+					    Statut = Table.AddColumn(Biblio, "Statut", each
+					        let s = Outils[StatutNormalise]([Statut rapport], null)
+					        in if s = "Échec" then (if [#"Éléments migrés"] <> null and [#"Éléments migrés"] > 0 then "Terminé avec erreurs" else "Échec")
+					           else if s = "Migré" then "Terminé"
+					           else s, type text),
+					    GoMigres = Table.AddColumn(Statut, "Go migrés", each
+					        if [#"Go migrés (rapport)"] <> null then [#"Go migrés (rapport)"]
+					        else if [#"Octets migrés"] <> null then [#"Octets migrés"] / 1073741824
+					        else null, type nullable number),
+					    DureeMin = Table.AddColumn(GoMigres, "Durée (min)", each if [#"Durée (s)"] = null then null else Number.Round([#"Durée (s)"] / 60, 2), type nullable number),
+					    Libelle = Table.AddColumn(DureeMin, "Tâche", each
+					        if [#"Nom de la tâche"] <> null then [#"Nom de la tâche"]
+					        else [#"Bibliothèque"] & " - passage " & Number.ToText([Passage]), type text),
+					    Resultat = Table.RemoveColumns(Libelle, {"_cle", "_cleCorr", "_biblioCorr"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Elements Migration'
+		lineageTag: 4f6054df-e693-5f37-a65f-02464eaee6c2
+
+		column Source
+			dataType: string
+			lineageTag: 216a2ed9-d3c9-575b-b6d4-7fb39f1c92ff
+			summarizeBy: none
+			sourceColumn: Source
+
+			annotation SummarizationSetBy = User
+
+		column Destination
+			dataType: string
+			lineageTag: d7843c52-8f10-5b4e-b2cf-13a88dcf101d
+			summarizeBy: none
+			sourceColumn: Destination
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: fe59038a-43d4-5658-86c0-b11fcb7c830a
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: edf58b1b-5213-52ee-b15d-2c58266e175a
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Type de contenu'
+			dataType: string
+			lineageTag: 4ef27483-0578-522b-a1b3-3a36fe329d2a
+			summarizeBy: none
+			sourceColumn: Type de contenu
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut rapport'
+			dataType: string
+			lineageTag: ef173478-c78c-58f7-9d0e-bfc1d59ad42a
+			summarizeBy: none
+			sourceColumn: Statut rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Catégorie'
+			dataType: string
+			lineageTag: dc72697e-0531-51eb-8c5f-90a150985538
+			summarizeBy: none
+			sourceColumn: Catégorie
+
+			annotation SummarizationSetBy = User
+
+		column Message
+			dataType: string
+			lineageTag: 4913fe9d-738d-5420-8489-17b237d7c669
+			summarizeBy: none
+			sourceColumn: Message
+
+			annotation SummarizationSetBy = User
+
+		column 'ID source'
+			dataType: string
+			lineageTag: 983606fd-f1c0-5d54-af76-ff512fcaee7c
+			summarizeBy: none
+			sourceColumn: ID source
+
+			annotation SummarizationSetBy = User
+
+		column 'ID destination'
+			dataType: string
+			lineageTag: 4786260b-f965-58d9-8b6b-972b5a5bf3b6
+			summarizeBy: none
+			sourceColumn: ID destination
+
+			annotation SummarizationSetBy = User
+
+		column Package
+			dataType: string
+			lineageTag: a91ac3dd-2c44-54d7-9848-9f155cbf74fc
+			summarizeBy: none
+			sourceColumn: Package
+
+			annotation SummarizationSetBy = User
+
+		column 'Job de migration'
+			dataType: string
+			lineageTag: f44ac13f-845a-5a7f-b184-5aecb4ee7b57
+			summarizeBy: none
+			sourceColumn: Job de migration
+
+			annotation SummarizationSetBy = User
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: 4e03b3c5-32dc-59fe-9ac0-4fad92c2d533
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column 'Task ID'
+			dataType: string
+			lineageTag: edffa8ec-257b-5b31-9129-5e17035898c7
+			summarizeBy: none
+			sourceColumn: Task ID
+
+			annotation SummarizationSetBy = User
+
+		column Poste
+			dataType: string
+			lineageTag: 2fea4a36-96cd-5317-8884-66596a112290
+			summarizeBy: none
+			sourceColumn: Poste
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: 37e3b562-8fab-57eb-ae9f-0ae942689cf0
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier rapport'
+			dataType: string
+			lineageTag: 5a36fce4-67a7-5170-a5c1-7a1349589288
+			summarizeBy: none
+			sourceColumn: Dossier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Clé source'
+			dataType: string
+			isHidden
+			lineageTag: f5bf04f6-a00f-5b94-8a5f-9b0895132d3a
+			summarizeBy: none
+			sourceColumn: Clé source
+
+			annotation SummarizationSetBy = User
+
+		column 'Clé cible'
+			dataType: string
+			isHidden
+			lineageTag: 09350176-8f2f-5c02-9500-e107a4e3961d
+			summarizeBy: none
+			sourceColumn: Clé cible
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: a7ff7934-a4a2-586c-a752-b47b545c831f
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column Statut
+			dataType: string
+			lineageTag: 7fd534d3-c765-5afa-ac05-ccd7dede4d9c
+			summarizeBy: none
+			sourceColumn: Statut
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: c178678a-8e35-56da-bbd6-07165644843a
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.00
+			lineageTag: 30b5f3e9-9210-5e13-9f40-c41948a35fac
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column 'Clé élément'
+			dataType: string
+			isHidden
+			lineageTag: beed0ff6-9ed8-5bae-af4d-06ec3aca7495
+			summarizeBy: none
+			sourceColumn: Clé élément
+
+			annotation SummarizationSetBy = User
+
+		column 'Dernier passage'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: c826e9e0-fd36-54c4-a21f-231dd801c903
+			summarizeBy: none
+			sourceColumn: Dernier passage
+
+			annotation SummarizationSetBy = User
+
+		partition 'Elements Migration' = m
+			mode: import
+			source =
+					let
+					    Taches = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(Table.SelectRows(#"Taches Migration", each [Task ID] <> null), {"Task ID", "Bibliothèque"}),
+					                {"Task ID"}),
+					            {{"Task ID", "_tid"}, {"Bibliothèque", "_biblioTache"}})),
+					    Src = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(
+					                    Table.SelectRows(
+					                        Table.AddColumn(stg_Source, "_cleSrc", each Outils[CleChemin]([Chemin complet]), type nullable text),
+					                        each [_cleSrc] <> null),
+					                    {"_cleSrc", "Bibliothèque"}),
+					                {"_cleSrc"}),
+					            {{"Bibliothèque", "_biblioSrc"}})),
+					    Base0 = Table.AddColumn(stg_Elements, "Clé source", each Outils[CleChemin]([Source]), type nullable text),
+					    Base1 = Table.AddColumn(Base0, "Clé cible", each Outils[CleUrl]([Destination]), type nullable text),
+					    J1 = Table.Join(Base1, "Task ID", Taches, "_tid", JoinKind.LeftOuter),
+					    J2 = Table.Join(J1, "Clé source", Src, "_cleSrc", JoinKind.LeftOuter),
+					    Biblio = Table.AddColumn(J2, "Bibliothèque", each
+					        if [_biblioTache] <> null then [_biblioTache] else if [_biblioSrc] <> null then [_biblioSrc] else "(inconnue)", type text),
+					    Statut = Table.AddColumn(Biblio, "Statut", each Outils[StatutNormalise]([Statut rapport], [#"Catégorie"]), type text),
+					    Ext = Table.AddColumn(Statut, "Extension", each Outils[Extension]([Extension brute], [Nom]), type text),
+					    TailleMo = Table.AddColumn(Ext, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+					    Cle = Table.AddColumn(TailleMo, "Clé élément", each
+					        if [#"Clé source"] <> null then [#"Clé source"]
+					        else if [#"Clé cible"] <> null then [#"Clé cible"]
+					        else Text.Lower(if [Nom] = null then "" else [Nom]), type text),
+					    Tampon = Table.Buffer(Table.RemoveColumns(Cle, {"_tid", "_biblioTache", "_cleSrc", "_biblioSrc", "Extension brute"})),
+					    MaxParCle = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Group(Tampon, {"Clé élément"}, {{"_max", each List.Max([Passage]), type nullable number}}),
+					            {{"Clé élément", "_cleMax"}})),
+					    J3 = Table.Join(Tampon, "Clé élément", MaxParCle, "_cleMax", JoinKind.LeftOuter),
+					    Dernier = Table.AddColumn(J3, "Dernier passage", each [_max] = null or [Passage] >= [_max], type logical),
+					    Resultat = Table.RemoveColumns(Dernier, {"_cleMax", "_max"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Echecs Migration'
+		lineageTag: 6b925d65-1e72-5b5a-996b-8738d5590fbc
+
+		column Source
+			dataType: string
+			lineageTag: ce915fa9-c076-5112-a71a-552da1512437
+			summarizeBy: none
+			sourceColumn: Source
+
+			annotation SummarizationSetBy = User
+
+		column Destination
+			dataType: string
+			lineageTag: 3c6dc950-e524-59d9-8d44-a5255ab629fd
+			summarizeBy: none
+			sourceColumn: Destination
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: 765b0b52-d0d8-5855-a67d-b96b539925f4
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: 687e3761-a086-5110-a770-e58f12ecc4fa
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Type de contenu'
+			dataType: string
+			lineageTag: b338d261-5e32-5db1-8bed-ca5e714e066d
+			summarizeBy: none
+			sourceColumn: Type de contenu
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut rapport'
+			dataType: string
+			lineageTag: 4847c658-1c7b-578c-8a12-0745c4c839a6
+			summarizeBy: none
+			sourceColumn: Statut rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Catégorie'
+			dataType: string
+			lineageTag: 148183cd-4e3d-5cf2-bcd9-9f61dc9a9ddb
+			summarizeBy: none
+			sourceColumn: Catégorie
+
+			annotation SummarizationSetBy = User
+
+		column Message
+			dataType: string
+			lineageTag: 01bf8ef4-d693-5797-9018-f2243a2f3f2f
+			summarizeBy: none
+			sourceColumn: Message
+
+			annotation SummarizationSetBy = User
+
+		column 'ID source'
+			dataType: string
+			lineageTag: bdea634f-9b02-5132-bc70-6f465844e974
+			summarizeBy: none
+			sourceColumn: ID source
+
+			annotation SummarizationSetBy = User
+
+		column 'ID destination'
+			dataType: string
+			lineageTag: a370b5e3-596d-5bec-bd95-71a09b36dc31
+			summarizeBy: none
+			sourceColumn: ID destination
+
+			annotation SummarizationSetBy = User
+
+		column Package
+			dataType: string
+			lineageTag: ec2cf65d-61e6-5d79-bdd5-0c461ec97463
+			summarizeBy: none
+			sourceColumn: Package
+
+			annotation SummarizationSetBy = User
+
+		column 'Job de migration'
+			dataType: string
+			lineageTag: 7f46d64c-4702-5752-b369-aea80a2449e9
+			summarizeBy: none
+			sourceColumn: Job de migration
+
+			annotation SummarizationSetBy = User
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: 4db8f176-4745-5ecf-8f8d-59218cd9cdeb
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column 'Task ID'
+			dataType: string
+			lineageTag: 963aea4a-90cd-5c8c-b02a-e7ba46f257cc
+			summarizeBy: none
+			sourceColumn: Task ID
+
+			annotation SummarizationSetBy = User
+
+		column Poste
+			dataType: string
+			lineageTag: bdc331ce-d490-5058-af52-9cd2fa55900a
+			summarizeBy: none
+			sourceColumn: Poste
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: b0c27a36-a00d-5fb3-a3db-ca0b03e598c8
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier rapport'
+			dataType: string
+			lineageTag: dbe45af9-d64f-5341-86d0-70ebf4e4cd08
+			summarizeBy: none
+			sourceColumn: Dossier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Code erreur'
+			dataType: string
+			lineageTag: 70b5f349-06ed-5858-9606-a87ead1273e2
+			summarizeBy: none
+			sourceColumn: Code erreur
+
+			annotation SummarizationSetBy = User
+
+		column 'Clé source'
+			dataType: string
+			isHidden
+			lineageTag: 8ca4b4a9-ab7a-50ca-a20e-1e96fa3ce5b4
+			summarizeBy: none
+			sourceColumn: Clé source
+
+			annotation SummarizationSetBy = User
+
+		column 'Clé élément'
+			dataType: string
+			isHidden
+			lineageTag: 2961be52-4f7b-5a28-9f3b-a57856281d95
+			summarizeBy: none
+			sourceColumn: Clé élément
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut final'
+			dataType: string
+			lineageTag: b69d4e2c-7d8a-5aa3-8ccc-213b373c4ce3
+			summarizeBy: none
+			sourceColumn: Statut final
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: ec309957-4518-5152-ad9b-88b5f93afcfd
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: f79f8b0b-3ba1-503a-9c37-fe0024e6e40c
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Code erreur (affiché)'
+			dataType: string
+			lineageTag: b98bae09-67c1-548c-bac1-93a680c82b91
+			summarizeBy: none
+			sourceColumn: Code erreur (affiché)
+
+			annotation SummarizationSetBy = User
+
+		column 'Dernier passage'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: e63e88ea-f205-5221-b928-c7ea19953678
+			summarizeBy: none
+			sourceColumn: Dernier passage
+
+			annotation SummarizationSetBy = User
+
+		column 'Corrigé par relance'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 36549667-0866-50eb-b35f-95f0a3a84139
+			summarizeBy: none
+			sourceColumn: Corrigé par relance
+
+			annotation SummarizationSetBy = User
+
+		partition 'Echecs Migration' = m
+			mode: import
+			source =
+					let
+					    Taches = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(Table.SelectRows(#"Taches Migration", each [Task ID] <> null), {"Task ID", "Bibliothèque"}),
+					                {"Task ID"}),
+					            {{"Task ID", "_tid"}, {"Bibliothèque", "_biblioTache"}})),
+					    Elem = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Group(#"Elements Migration", {"Clé élément"}, {{"_max", each List.Max([Passage]), type nullable number}}),
+					            {{"Clé élément", "_cleMax"}})),
+					    Base0 = Table.AddColumn(stg_Echecs, "Clé source", each Outils[CleChemin]([Source]), type nullable text),
+					    Base1 = Table.AddColumn(Base0, "Clé élément", each
+					        let c = Outils[CleUrl]([Destination])
+					        in if [#"Clé source"] <> null then [#"Clé source"] else if c <> null then c else Text.Lower(if [Nom] = null then "" else [Nom]), type text),
+					    J1 = Table.Join(Base1, "Task ID", Taches, "_tid", JoinKind.LeftOuter),
+					    J2 = Table.Join(J1, "Clé élément", Elem, "_cleMax", JoinKind.LeftOuter),
+					    Final = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(Table.SelectColumns(Table.SelectRows(#"Elements Migration", each [Dernier passage] = true), {"Clé élément", "Statut"}), {"Clé élément"}),
+					            {{"Clé élément", "_cleFin"}, {"Statut", "Statut final"}})),
+					    J3 = Table.Join(J2, "Clé élément", Final, "_cleFin", JoinKind.LeftOuter),
+					    Biblio = Table.AddColumn(J3, "Bibliothèque", each if [_biblioTache] <> null then [_biblioTache] else "(inconnue)", type text),
+					    Ext = Table.AddColumn(Biblio, "Extension", each Outils[Extension]([Extension brute], [Nom]), type text),
+					    CodeAff = Table.AddColumn(Ext, "Code erreur (affiché)", each if [Code erreur] = null then "(sans code)" else [Code erreur], type text),
+					    Persistant = Table.AddColumn(CodeAff, "Dernier passage", each [_max] = null or [Passage] >= [_max], type logical),
+					    Corrige = Table.AddColumn(Persistant, "Corrigé par relance", each not [Dernier passage] and [Statut final] = "Migré", type logical),
+					    Resultat = Table.RemoveColumns(Corrige, {"_tid", "_biblioTache", "_cleMax", "_max", "_cleFin", "Extension brute"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Pipeline Migration'
+		lineageTag: f7b2b2b7-8b53-5523-bea1-32f852b8c085
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: 6d4eda98-accd-5cc1-939f-abafc1c0d098
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column Ordre
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: 2d9d0c5c-2b44-582f-8b95-c06254da3501
+			summarizeBy: none
+			sourceColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		column 'Étape'
+			dataType: string
+			lineageTag: b992c090-3f23-50c3-a7a2-6733f931485d
+			summarizeBy: none
+			sourceColumn: Étape
+			sortByColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		column Type
+			dataType: string
+			lineageTag: 43b08fab-f1e3-59ea-97cb-b232e12ceac8
+			summarizeBy: none
+			sourceColumn: Type
+
+			annotation SummarizationSetBy = User
+
+		column Nombre
+			dataType: double
+			formatString: #,0
+			lineageTag: 01b314b1-4fd3-5bb9-bda3-4e0249acf53f
+			summarizeBy: none
+			sourceColumn: Nombre
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: ee11d263-f66a-5c94-8bcc-2a58d23e801e
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier rapport'
+			dataType: string
+			lineageTag: ad4ecea1-0395-5902-86a2-0d2c98467169
+			summarizeBy: none
+			sourceColumn: Dossier rapport
+
+			annotation SummarizationSetBy = User
+
+		partition 'Pipeline Migration' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("ItemSummary"),
+					    Etapes = {
+					        {1, "Analysés", "Progression", {"scanned"}},
+					        {2, "À migrer", "Progression", {"expectedmigratedfilecount"}},
+					        {3, "Lus", "Progression", {"read"}},
+					        {4, "Empaquetés", "Progression", {"packaged"}},
+					        {5, "Téléversés", "Progression", {"uploaded"}},
+					        {6, "Soumis", "Progression", {"submitted"}},
+					        {7, "Migrés", "Progression", {"migrated"}},
+					        {11, "Filtrés", "Exclusion", {"filteredoutitems"}},
+					        {12, "Échecs analyse", "Échec", {"itemscanfailures"}},
+					        {13, "Échecs lecture", "Échec", {"failedreading"}},
+					        {14, "Échecs empaquetage", "Échec", {"failedpacking"}},
+					        {15, "Échecs téléversement", "Échec", {"faileduploading"}},
+					        {16, "Échecs soumission", "Échec", {"failedsubmitting"}},
+					        {17, "Échecs requête", "Échec", {"failedquerying"}}
+					    },
+					    Lignes = List.Combine(List.Transform(Table.ToRecords(Brut), (r) =>
+					        let
+					            fichier = Outils[Texte](r, {"_fichier"}),
+					            p = Outils[Nombre](r, {"incrementalround"}),
+					            pf = Outils[PassageDepuisFichier](fichier)
+					        in
+					            List.Transform(Etapes, (e) =>
+					                let n = Outils[Nombre](r, e{3})
+					                in [
+					                    Passage = if p <> null then p else if pf <> null then pf else 1,
+					                    Ordre = e{0},
+					                    #"Étape" = e{1},
+					                    Type = e{2},
+					                    Nombre = if n = null then 0 else n,
+					                    #"Fichier rapport" = fichier,
+					                    #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+					                ]))),
+					    Resultat = Table.FromRecords(Lignes, type table [
+					        Passage = number, Ordre = Int64.Type, #"Étape" = text, Type = text, Nombre = number,
+					        #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text])
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Analyse Migration'
+		lineageTag: d697663f-19d7-5a97-971b-0bf2adbe9661
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: c832f576-8536-57eb-aeeb-e9934d9af218
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments analysés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 764432b7-9c13-5c40-9a94-4e3c861d51ee
+			summarizeBy: none
+			sourceColumn: Éléments analysés
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossiers analysés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 80562ba9-16c5-52c3-a180-cdc7aeb8ab11
+			summarizeBy: none
+			sourceColumn: Dossiers analysés
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichiers analysés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: dcd494df-ad7f-513a-841f-7873ed31c187
+			summarizeBy: none
+			sourceColumn: Fichiers analysés
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossiers en anomalie'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 0d389508-35af-51b9-9c77-017797e9999b
+			summarizeBy: none
+			sourceColumn: Dossiers en anomalie
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments en anomalie'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: 752dd424-1ba1-5272-a571-3ea499a837f6
+			summarizeBy: none
+			sourceColumn: Éléments en anomalie
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments filtrés'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: e87bb5f7-20a0-507c-b776-b476940ee034
+			summarizeBy: none
+			sourceColumn: Éléments filtrés
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossiers à migrer'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: deb0cb57-d08c-5128-9f22-5b9d0b622390
+			summarizeBy: none
+			sourceColumn: Dossiers à migrer
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments à migrer'
+			dataType: double
+			formatString: #,0.##
+			lineageTag: bab846c0-3790-5df6-bf7d-df19d37edb6a
+			summarizeBy: none
+			sourceColumn: Éléments à migrer
+
+			annotation SummarizationSetBy = User
+
+		column Poste
+			dataType: string
+			lineageTag: 52762fb9-23e9-50d1-998f-3d080bdbbc39
+			summarizeBy: none
+			sourceColumn: Poste
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: f307e933-84ec-58c6-9b3a-2034adb7bc9a
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier rapport'
+			dataType: string
+			lineageTag: 1746aa20-f6c8-5a32-adf7-62864e867dfa
+			summarizeBy: none
+			sourceColumn: Dossier rapport
+
+			annotation SummarizationSetBy = User
+
+		partition 'Analyse Migration' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("ScanSummary"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+					        let
+					            fichier = Outils[Texte](r, {"_fichier"}),
+					            p = Outils[Nombre](r, {"incrementalround"}),
+					            pf = Outils[PassageDepuisFichier](fichier)
+					        in [
+					            Passage = if p <> null then p else if pf <> null then pf else 1,
+					            #"Éléments analysés" = Outils[Nombre](r, {"totalscanneditems"}),
+					            #"Dossiers analysés" = Outils[Nombre](r, {"totalscannedfolders"}),
+					            #"Fichiers analysés" = Outils[Nombre](r, {"totalscannedfiles"}),
+					            #"Dossiers en anomalie" = Outils[Nombre](r, {"folderswithissues"}),
+					            #"Éléments en anomalie" = Outils[Nombre](r, {"itemswithissues"}),
+					            #"Éléments filtrés" = Outils[Nombre](r, {"itemsfilteredout"}),
+					            #"Dossiers à migrer" = Outils[Nombre](r, {"folderstobemigrated"}),
+					            #"Éléments à migrer" = Outils[Nombre](r, {"itemstobemigrated", "totalitemstobemigrated"}),
+					            Poste = Outils[Texte](r, {"devicename"}),
+					            #"Fichier rapport" = fichier,
+					            #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+					        ]),
+					    Resultat = Table.FromRecords(Lignes, type table [
+					        Passage = number, #"Éléments analysés" = nullable number, #"Dossiers analysés" = nullable number,
+					        #"Fichiers analysés" = nullable number, #"Dossiers en anomalie" = nullable number, #"Éléments en anomalie" = nullable number,
+					        #"Éléments filtrés" = nullable number, #"Dossiers à migrer" = nullable number, #"Éléments à migrer" = nullable number,
+					        Poste = nullable text, #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text])
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Inventaire Source'
+		lineageTag: c4650398-8554-5dce-bbaa-53bd3520e870
+
+		column 'Chemin complet'
+			dataType: string
+			lineageTag: 6b33e19f-b8be-5947-b123-bcda2c75859c
+			summarizeBy: none
+			sourceColumn: Chemin complet
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin local'
+			dataType: string
+			lineageTag: cf8ff3bc-d921-5802-a369-3938c07ed917
+			summarizeBy: none
+			sourceColumn: Chemin local
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin relatif'
+			dataType: string
+			lineageTag: 3de24413-4a12-50b2-99e5-9177e1314910
+			summarizeBy: none
+			sourceColumn: Chemin relatif
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier racine'
+			dataType: string
+			lineageTag: 71b6f0f6-0898-5a5f-b548-9955a68072b3
+			summarizeBy: none
+			sourceColumn: Dossier racine
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: e110d32b-0006-5ffb-834e-51cb18b57c06
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin cible'
+			dataType: string
+			lineageTag: 58f0de93-e1ad-5179-bcb1-20c4c9d2aeef
+			summarizeBy: none
+			sourceColumn: Chemin cible
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: 65c77585-0e06-5503-80df-563920d77b3f
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: e418f1e7-cb19-56b6-ac10-836a51e52c57
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: 0e179d76-0746-51d7-901e-fdd23516f6e0
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de création'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 7425f02c-10d1-555b-9e2d-1f6c0e091ebf
+			summarizeBy: none
+			sourceColumn: Date de création
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de modification'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: c7f96baa-53f2-559a-bb20-23193d991d6f
+			summarizeBy: none
+			sourceColumn: Date de modification
+
+			annotation SummarizationSetBy = User
+
+		column 'Caché'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 79885e88-fea9-55df-8b13-6fe5b0f8ebdd
+			summarizeBy: none
+			sourceColumn: Caché
+
+			annotation SummarizationSetBy = User
+
+		column 'Système'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 9a63d36c-4872-5274-9350-f39351f63818
+			summarizeBy: none
+			sourceColumn: Système
+
+			annotation SummarizationSetBy = User
+
+		column 'Longueur chemin'
+			dataType: double
+			formatString: 0
+			lineageTag: 86230566-f7b9-5afb-ae70-e28ec009e9d5
+			summarizeBy: none
+			sourceColumn: Longueur chemin
+
+			annotation SummarizationSetBy = User
+
+		column 'Longueur chemin cible'
+			dataType: double
+			formatString: 0
+			lineageTag: 6a60fbba-6640-59bc-8713-09f40bb0d693
+			summarizeBy: none
+			sourceColumn: Longueur chemin cible
+
+			annotation SummarizationSetBy = User
+
+		column Profondeur
+			dataType: double
+			formatString: 0
+			lineageTag: 2c713617-da69-5bc0-a623-7feb39d63349
+			summarizeBy: none
+			sourceColumn: Profondeur
+
+			annotation SummarizationSetBy = User
+
+		column Anomalies
+			dataType: string
+			lineageTag: 468a6b3b-f467-5413-9d52-2901b1285520
+			summarizeBy: none
+			sourceColumn: Anomalies
+
+			annotation SummarizationSetBy = User
+
+		column Hash
+			dataType: string
+			isHidden
+			lineageTag: cc8fece5-05e3-54a5-89c6-0ed3c1af7310
+			summarizeBy: none
+			sourceColumn: Hash
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut rapport'
+			dataType: string
+			lineageTag: e3ff85fd-7054-5486-8a3b-853a49eb8a48
+			summarizeBy: none
+			sourceColumn: Statut rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Message rapport'
+			dataType: string
+			lineageTag: 490042df-d62a-53d8-a911-3baa0918fd2b
+			summarizeBy: none
+			sourceColumn: Message rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Présence SharePoint'
+			dataType: string
+			lineageTag: 5fcf7c0e-8618-58b7-bd3e-0c7d9f3404de
+			summarizeBy: none
+			sourceColumn: Présence SharePoint
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.00
+			lineageTag: 1f46e349-f1ea-524e-badb-15667a320294
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column 'Âge (années)'
+			dataType: double
+			formatString: 0.0
+			lineageTag: 35fe4c07-e3d8-5065-8901-da24c924e73b
+			summarizeBy: none
+			sourceColumn: Âge (années)
+
+			annotation SummarizationSetBy = User
+
+		column 'Année de modification'
+			dataType: double
+			formatString: 0
+			lineageTag: acfc0f60-5c29-53dd-a553-469a6f5f9835
+			summarizeBy: none
+			sourceColumn: Année de modification
+
+			annotation SummarizationSetBy = User
+
+		column 'Ancienneté'
+			dataType: string
+			lineageTag: 18108621-ee97-57dd-a533-8594a4f4b483
+			summarizeBy: none
+			sourceColumn: Ancienneté
+			sortByColumn: 'Ordre ancienneté'
+
+			annotation SummarizationSetBy = User
+
+		column 'Ordre ancienneté'
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: ab9054ba-d639-5e03-a988-8f94418fc354
+			summarizeBy: none
+			sourceColumn: Ordre ancienneté
+
+			annotation SummarizationSetBy = User
+
+		column 'Tranche de taille'
+			dataType: string
+			lineageTag: 7052c396-ea9a-5a3b-b9fa-fe410aea84ca
+			summarizeBy: none
+			sourceColumn: Tranche de taille
+			sortByColumn: 'Ordre tranche de taille'
+
+			annotation SummarizationSetBy = User
+
+		column 'Ordre tranche de taille'
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: 17e3e4fd-fa7a-554f-81c3-9c0e25234f08
+			summarizeBy: none
+			sourceColumn: Ordre tranche de taille
+
+			annotation SummarizationSetBy = User
+
+		column 'Type de fichier'
+			dataType: string
+			lineageTag: 1b60efb6-64b3-581a-a7d1-9bb92f173f8a
+			summarizeBy: none
+			sourceColumn: Type de fichier
+
+			annotation SummarizationSetBy = User
+
+		column 'Avec anomalie'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 2e9bed38-5472-5bc5-be8a-20d1a9cf6b34
+			summarizeBy: none
+			sourceColumn: Avec anomalie
+
+			annotation SummarizationSetBy = User
+
+		column 'Occurrences du contenu'
+			dataType: int64
+			formatString: 0
+			lineageTag: 2a325c41-8cff-5693-8674-e663b128fafc
+			summarizeBy: none
+			sourceColumn: Occurrences du contenu
+
+			annotation SummarizationSetBy = User
+
+		column 'Copie en doublon'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 80a97418-ab00-502f-9599-5a579290416f
+			summarizeBy: none
+			sourceColumn: Copie en doublon
+
+			annotation SummarizationSetBy = User
+
+		partition 'Inventaire Source' = m
+			mode: import
+			source =
+					let
+					    Base = Table.Buffer(
+					        Table.AddColumn(
+					            Table.AddColumn(stg_Source, "_cle", each Outils[CleChemin]([Chemin complet]), type nullable text),
+					            "_clecible", each if [Chemin cible] = null then null else Text.Lower([Chemin cible]), type nullable text)),
+					    Elem = Table.Buffer(
+					        Table.SelectColumns(
+					            Table.SelectRows(#"Elements Migration", each [Dernier passage] = true),
+					            {"Clé source", "Clé cible", "Statut", "Message"})),
+					    AvecRapports = not Table.IsEmpty(Elem),
+					    ElemSrc = Table.RenameColumns(
+					        Table.Distinct(Table.SelectRows(Table.SelectColumns(Elem, {"Clé source", "Statut", "Message"}), each [#"Clé source"] <> null), {"Clé source"}),
+					        {{"Clé source", "_k1"}, {"Statut", "_st1"}, {"Message", "_msg1"}}),
+					    ElemCib = Table.RenameColumns(
+					        Table.Distinct(Table.SelectRows(Table.SelectColumns(Elem, {"Clé cible", "Statut", "Message"}), each [#"Clé cible"] <> null), {"Clé cible"}),
+					        {{"Clé cible", "_k2"}, {"Statut", "_st2"}, {"Message", "_msg2"}}),
+					    SP = Table.Buffer(
+					        Table.AddColumn(
+					            Table.Distinct(
+					                Table.SelectColumns(
+					                    Table.AddColumn(Table.SelectRows(stg_SharePoint, each [Chemin cible] <> null), "_k3", each Text.Lower([Chemin cible]), type text),
+					                    {"_k3"}),
+					                {"_k3"}),
+					            "_sp", each true, type logical)),
+					    AvecSP = not Table.IsEmpty(SP),
+					    Hashs = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Group(
+					                Table.SelectRows(Base, each [Hash] <> null and [Hash] <> "" and [Hash] <> "ERREUR"),
+					                {"Hash"},
+					                {{"_n", each Table.RowCount(_), Int64.Type}, {"_premier", each List.Min([Chemin complet]), type text}}),
+					            {{"Hash", "_kh"}})),
+					    J1 = Table.Join(Base, "_cle", ElemSrc, "_k1", JoinKind.LeftOuter),
+					    J2 = Table.Join(J1, "_clecible", ElemCib, "_k2", JoinKind.LeftOuter),
+					    J3 = Table.Join(J2, "_clecible", SP, "_k3", JoinKind.LeftOuter),
+					    J4 = Table.Join(J3, "Hash", Hashs, "_kh", JoinKind.LeftOuter),
+					    StatutRapport = Table.AddColumn(J4, "Statut rapport", each
+					        if [_st1] <> null then [_st1]
+					        else if [_st2] <> null then [_st2]
+					        else if AvecRapports then "Non traité par Migration Manager"
+					        else "Rapports Migration Manager absents", type text),
+					    MessageRapport = Table.AddColumn(StatutRapport, "Message rapport", each if [_st1] <> null then [_msg1] else [_msg2], type nullable text),
+					    Presence = Table.AddColumn(MessageRapport, "Présence SharePoint", each
+					        if not AvecSP then "Non vérifié" else if [_sp] = true then "Présent" else "Absent", type text),
+					    TailleMo = Table.AddColumn(Presence, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+					    Aujourdhui = Date.From(DateTime.LocalNow()),
+					    Age = Table.AddColumn(TailleMo, "Âge (années)", each
+					        if [Date de modification] = null then null
+					        else Number.Round(Duration.Days(Aujourdhui - Date.From([Date de modification])) / 365.25, 1), type nullable number),
+					    Annee = Table.AddColumn(Age, "Année de modification", each
+					        if [Date de modification] = null then null else Date.Year([Date de modification]), type nullable number),
+					    Anc = Table.AddColumn(Annee, "Ancienneté", each
+					        let a = [#"Âge (années)"]
+					        in if a = null then "Inconnue" else if a < 1 then "< 1 an" else if a < 3 then "1 à 3 ans"
+					           else if a < 5 then "3 à 5 ans" else if a < 10 then "5 à 10 ans" else "> 10 ans", type text),
+					    AncOrdre = Table.AddColumn(Anc, "Ordre ancienneté", each
+					        let a = [#"Âge (années)"]
+					        in if a = null then 9 else if a < 1 then 1 else if a < 3 then 2 else if a < 5 then 3 else if a < 10 then 4 else 5, Int64.Type),
+					    Tranche = Table.AddColumn(AncOrdre, "Tranche de taille", each
+					        let o = [#"Taille (octets)"]
+					        in if o = null then "Inconnue" else if o = 0 then "Vide (0 octet)" else if o < 102400 then "< 100 Ko"
+					           else if o < 1048576 then "100 Ko à 1 Mo" else if o < 10485760 then "1 à 10 Mo"
+					           else if o < 104857600 then "10 à 100 Mo" else "> 100 Mo", type text),
+					    TrancheOrdre = Table.AddColumn(Tranche, "Ordre tranche de taille", each
+					        let o = [#"Taille (octets)"]
+					        in if o = null then 9 else if o = 0 then 0 else if o < 102400 then 1 else if o < 1048576 then 2
+					           else if o < 10485760 then 3 else if o < 104857600 then 4 else 5, Int64.Type),
+					    TypeF = Table.AddColumn(TrancheOrdre, "Type de fichier", each Outils[TypeFichier]([Extension]), type text),
+					    Anom = Table.AddColumn(TypeF, "Avec anomalie", each [Anomalies] <> null and [Anomalies] <> "", type logical),
+					    Occ = Table.AddColumn(Anom, "Occurrences du contenu", each if [_n] = null then 1 else [_n], Int64.Type),
+					    Doublon = Table.AddColumn(Occ, "Copie en doublon", each [_n] <> null and [_n] > 1 and [Chemin complet] <> [_premier], type logical),
+					    Resultat = Table.RemoveColumns(Doublon, {"_cle", "_clecible", "_k1", "_st1", "_msg1", "_k2", "_st2", "_msg2", "_k3", "_sp", "_kh", "_n", "_premier"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Anomalies Source'
+		lineageTag: a281b981-f68e-5a90-8c11-b9172d8cbc21
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: ae5d233e-ac8d-5ccb-83a0-aff58d8f8b37
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin complet'
+			dataType: string
+			lineageTag: ec421459-2c34-5fb0-bbf1-bd4126a9ea5a
+			summarizeBy: none
+			sourceColumn: Chemin complet
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: 95ac86e5-7ffa-506d-8d9b-0ad220e53c90
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: a7e89567-b326-511e-8219-014208c277a1
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.00
+			lineageTag: 8b873fac-9f07-50b6-a4ad-6eb584afea6b
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column Anomalie
+			dataType: string
+			lineageTag: 37b3b4ad-8448-5675-a293-fe83602d972d
+			summarizeBy: none
+			sourceColumn: Anomalie
+
+			annotation SummarizationSetBy = User
+
+		partition 'Anomalies Source' = m
+			mode: import
+			source =
+					let
+					    Base = Table.SelectRows(stg_Source, each [Anomalies] <> null and [Anomalies] <> ""),
+					    Colonnes = Table.SelectColumns(Base, {"Bibliothèque", "Chemin complet", "Nom", "Extension", "Taille (octets)", "Anomalies"}),
+					    TailleMo = Table.AddColumn(Colonnes, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+					    Liste = Table.AddColumn(TailleMo, "Anomalie", each List.Transform(Text.Split([Anomalies], "|"), Text.Trim)),
+					    Eclate = Table.ExpandListColumn(Liste, "Anomalie"),
+					    Filtre = Table.SelectRows(Eclate, each [Anomalie] <> null and [Anomalie] <> ""),
+					    Types = Table.TransformColumnTypes(Filtre, {{"Anomalie", type text}}),
+					    Resultat = Table.RemoveColumns(Types, {"Anomalies", "Taille (octets)"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Inventaire SharePoint'
+		lineageTag: b8ccd9ff-e597-5b51-9f5d-6d6dac31e773
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: b2506971-96a1-50e7-8047-8fd62c31f469
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin relatif'
+			dataType: string
+			lineageTag: 69f4a8a0-2ed8-5336-9c1d-e84af71d0a85
+			summarizeBy: none
+			sourceColumn: Chemin relatif
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin cible'
+			dataType: string
+			lineageTag: 4f289327-79d5-5042-b331-0edab8753fff
+			summarizeBy: none
+			sourceColumn: Chemin cible
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: e99da937-e2f1-53e8-98fd-e82fc1afc2f6
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: ab0eeda2-4365-5a55-9fb6-3a936c6c839d
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: e007b909-75d8-55b2-bf70-bee23f6689b4
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de création SharePoint'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: eadf9745-2e43-5796-b055-1dca0a82e38a
+			summarizeBy: none
+			sourceColumn: Date de création SharePoint
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de modification SharePoint'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 594a94f9-706f-58a6-a9c9-3956ab59ef27
+			summarizeBy: none
+			sourceColumn: Date de modification SharePoint
+
+			annotation SummarizationSetBy = User
+
+		column 'Date modification fichier'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 5d22ae16-3ada-535b-8abc-4e151c45797c
+			summarizeBy: none
+			sourceColumn: Date modification fichier
+
+			annotation SummarizationSetBy = User
+
+		column 'Créé par'
+			dataType: string
+			lineageTag: adc63218-5949-50a2-bf31-ba9085e66d1f
+			summarizeBy: none
+			sourceColumn: Créé par
+
+			annotation SummarizationSetBy = User
+
+		column 'Modifié par'
+			dataType: string
+			lineageTag: cf641569-ecbc-541d-ad48-55498aa72492
+			summarizeBy: none
+			sourceColumn: Modifié par
+
+			annotation SummarizationSetBy = User
+
+		column URL
+			dataType: string
+			lineageTag: 39bad110-2e43-58fc-8c40-978ff8cda03d
+			summarizeBy: none
+			sourceColumn: URL
+
+			annotation SummarizationSetBy = User
+
+		column 'ID élément'
+			dataType: string
+			lineageTag: 7bb44421-6458-533c-8958-cbc25c0e394a
+			summarizeBy: none
+			sourceColumn: ID élément
+
+			annotation SummarizationSetBy = User
+
+		column 'Présence source'
+			dataType: string
+			lineageTag: 6cf89db6-5a0b-597f-8ef4-ba7af34b6a35
+			summarizeBy: none
+			sourceColumn: Présence source
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de modification source'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: a4b556b6-e985-50b4-9eca-f11c5687d3d4
+			summarizeBy: none
+			sourceColumn: Date de modification source
+
+			annotation SummarizationSetBy = User
+
+		column 'Date conservée'
+			dataType: string
+			lineageTag: f8ab48ab-bf1a-5748-8c14-a147726e8206
+			summarizeBy: none
+			sourceColumn: Date conservée
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.00
+			lineageTag: e30cfbcb-dd02-53b0-ac70-79c223d48e34
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column 'Type de fichier'
+			dataType: string
+			lineageTag: 789fa83e-fb3d-59bd-98b1-425560fa75f9
+			summarizeBy: none
+			sourceColumn: Type de fichier
+
+			annotation SummarizationSetBy = User
+
+		partition 'Inventaire SharePoint' = m
+			mode: import
+			source =
+					let
+					    Base = Table.Buffer(Table.AddColumn(stg_SharePoint, "_clecible", each if [Chemin cible] = null then null else Text.Lower([Chemin cible]), type nullable text)),
+					    Src = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(
+					                    Table.AddColumn(Table.SelectRows(stg_Source, each [Chemin cible] <> null), "_k", each Text.Lower([Chemin cible]), type text),
+					                    {"_k", "Date de modification"}),
+					                {"_k"}),
+					            {{"Date de modification", "Date de modification source"}})),
+					    AvecSrc = not Table.IsEmpty(Src),
+					    J = Table.Join(Base, "_clecible", Src, "_k", JoinKind.LeftOuter),
+					    Presence = Table.AddColumn(J, "Présence source", each
+					        if not AvecSrc then "Non vérifié" else if [_k] = null then "Absent de la source" else "Présent dans la source", type text),
+					    Conservee = Table.AddColumn(Presence, "Date conservée", each
+					        if [Date de modification source] = null or [Date modification fichier] = null then "n/a"
+					        else if Number.Abs(Duration.TotalMinutes([Date modification fichier] - [Date de modification source])) <= 2 then "Oui"
+					        else "Non", type text),
+					    TailleMo = Table.AddColumn(Conservee, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+					    TypeF = Table.AddColumn(TailleMo, "Type de fichier", each Outils[TypeFichier]([Extension]), type text),
+					    Resultat = Table.RemoveColumns(TypeF, {"_clecible", "_k"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Fichiers de rapport'
+		lineageTag: 227569fd-58d9-57d9-bc6c-761b7e93a124
+
+		column Fichier
+			dataType: string
+			lineageTag: b1bb2b1f-7d9c-5394-8d11-7ad1bf97908d
+			summarizeBy: none
+			sourceColumn: Fichier
+
+			annotation SummarizationSetBy = User
+
+		column Dossier
+			dataType: string
+			lineageTag: 0e8a379a-135c-52de-b2f4-0235d288d70f
+			summarizeBy: none
+			sourceColumn: Dossier
+
+			annotation SummarizationSetBy = User
+
+		column 'Date du fichier'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: c8599abe-0b2c-5b6f-bc6f-c584033fadbd
+			summarizeBy: none
+			sourceColumn: Date du fichier
+
+			annotation SummarizationSetBy = User
+
+		column 'Type de rapport'
+			dataType: string
+			lineageTag: 9ce25735-cd48-5a2c-a3ec-b744d0e54066
+			summarizeBy: none
+			sourceColumn: Type de rapport
+
+			annotation SummarizationSetBy = User
+
+		column Passage
+			dataType: double
+			formatString: 0
+			lineageTag: 331521b0-e842-5bd7-a81d-5eeb4ae4e427
+			summarizeBy: none
+			sourceColumn: Passage
+
+			annotation SummarizationSetBy = User
+
+		column Origine
+			dataType: string
+			lineageTag: 664c9d04-6f2a-5483-922d-4ca1916941b0
+			summarizeBy: none
+			sourceColumn: Origine
+
+			annotation SummarizationSetBy = User
+
+		column 'Task ID'
+			dataType: string
+			lineageTag: 5fce8a53-373c-54a8-b54c-251bbea2e2fc
+			summarizeBy: none
+			sourceColumn: Task ID
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Ko)'
+			dataType: double
+			formatString: #,0.0
+			lineageTag: 733a82ac-cea2-544d-8183-ad59e061b141
+			summarizeBy: none
+			sourceColumn: Taille (Ko)
+
+			annotation SummarizationSetBy = User
+
+		partition 'Fichiers de rapport' = m
+			mode: import
+			source =
+					let
+					    Fichiers = Folder.Files(DossierRapports),
+					    Csv = Table.SelectRows(Fichiers, each Text.Lower([Extension]) = ".csv"),
+					    Base = Table.AddColumn(Csv, "_base", each Text.BeforeDelimiter([Name], ".", {0, RelativePosition.FromEnd}), type text),
+					    EstMM = Table.AddColumn(Base, "_mm", each
+					        Text.Contains(Text.Lower([Folder Path]), "\migrationmanager\") or Text.Contains(Text.Lower([Folder Path]), "/migrationmanager/"), type logical),
+					    Passage = Table.AddColumn(EstMM, "Passage", each if [_mm] then null else Outils[PassageDepuisFichier]([Name]), type nullable number),
+					    TypeRapport = Table.AddColumn(Passage, "Type de rapport", each
+					        if [_mm] then Text.BeforeDelimiter([_base], "_")
+					        else if [Passage] <> null then Text.BeforeDelimiter([_base], "_R", {0, RelativePosition.FromEnd})
+					        else [_base], type text),
+					    Origine = Table.AddColumn(TypeRapport, "Origine", each if [_mm] then "Rapport Migration Manager" else "Script du kit", type text),
+					    Tache = Table.AddColumn(Origine, "Task ID", each
+					        let p = Text.Split(Text.TrimEnd(Text.Replace([Folder Path], "/", "\"), "\"), "\"),
+					            n = List.Count(p)
+					        in if [_mm] and n >= 2 and Text.Lower(p{n - 2}) = "taches" then p{n - 1} else null, type nullable text),
+					    Taille = Table.AddColumn(Tache, "Taille (Ko)", each
+					        let s = try Record.FieldOrDefault([Attributes], "Size", null) otherwise null
+					        in if s = null then null else Number.Round(s / 1024, 1), type nullable number),
+					    Colonnes = Table.SelectColumns(Taille, {"Name", "Folder Path", "Date modified", "Type de rapport", "Passage", "Origine", "Task ID", "Taille (Ko)"}),
+					    Renommees = Table.RenameColumns(Colonnes, {{"Name", "Fichier"}, {"Folder Path", "Dossier"}, {"Date modified", "Date du fichier"}}),
+					    Resultat = Table.TransformColumnTypes(Renommees, {{"Fichier", type text}, {"Dossier", type text}, {"Date du fichier", type datetime}})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Scan Migration Manager'
+		lineageTag: bd879376-5d78-5b60-81e5-f1c991affc3c
+
+		column 'Chemin source'
+			dataType: string
+			lineageTag: af60d61e-3806-512d-8b9d-ed79440917b0
+			summarizeBy: none
+			sourceColumn: Chemin source
+
+			annotation SummarizationSetBy = User
+
+		column 'Statut du scan'
+			dataType: string
+			lineageTag: e7389670-e503-530b-bdb8-dd1508a82f7c
+			summarizeBy: none
+			sourceColumn: Statut du scan
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: 86ed2680-b365-54fb-8ef7-ca7a6ae415d3
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column Fichiers
+			dataType: double
+			formatString: #,0
+			lineageTag: bef30e74-09a8-5268-ac00-907597c98ddf
+			summarizeBy: none
+			sourceColumn: Fichiers
+
+			annotation SummarizationSetBy = User
+
+		column Dossiers
+			dataType: double
+			formatString: #,0
+			lineageTag: 40d9a5b0-f6ac-58de-a4d5-aa9d4699f8c7
+			summarizeBy: none
+			sourceColumn: Dossiers
+
+			annotation SummarizationSetBy = User
+
+		column 'Longueur max. du chemin'
+			dataType: double
+			formatString: 0
+			lineageTag: 4033ee21-630f-58e0-bcdc-c1e8235b9016
+			summarizeBy: none
+			sourceColumn: Longueur max. du chemin
+
+			annotation SummarizationSetBy = User
+
+		column 'Permissions racine'
+			dataType: double
+			formatString: 0
+			lineageTag: 6f192135-3e63-58d2-99b5-e81156b29cff
+			summarizeBy: none
+			sourceColumn: Permissions racine
+
+			annotation SummarizationSetBy = User
+
+		column 'Dernier accès'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 6f557717-fb79-513d-8900-04af08db3b89
+			summarizeBy: none
+			sourceColumn: Dernier accès
+
+			annotation SummarizationSetBy = User
+
+		column 'Scan créé le'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 99a1cf2d-3413-5af8-a147-2139844bc75a
+			summarizeBy: none
+			sourceColumn: Scan créé le
+
+			annotation SummarizationSetBy = User
+
+		column 'Préparation à la migration'
+			dataType: string
+			lineageTag: 19a2e1a9-08be-5154-b795-28330392a0c1
+			summarizeBy: none
+			sourceColumn: Préparation à la migration
+
+			annotation SummarizationSetBy = User
+
+		column 'Task ID'
+			dataType: string
+			lineageTag: 53a80561-31d9-5654-a828-caceae6eca3b
+			summarizeBy: none
+			sourceColumn: Task ID
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichier rapport'
+			dataType: string
+			lineageTag: 09892b8c-ee87-5ade-a288-e539108c02b9
+			summarizeBy: none
+			sourceColumn: Fichier rapport
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: ec7ce082-9b86-557d-848e-0cc972803efd
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'État'
+			dataType: string
+			lineageTag: c10aa5db-fef4-56d4-8218-883577ef34bc
+			summarizeBy: none
+			sourceColumn: État
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.0
+			lineageTag: d9541184-5593-5945-94a7-491a03b51b06
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		partition 'Scan Migration Manager' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("ScanReport"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) => [
+					        #"Chemin source" = Outils[Texte](r, {"sourcepath", "source"}),
+					        #"Statut du scan" = Outils[Texte](r, {"scanstatus", "status"}),
+					        #"Taille (octets)" = Outils[OctetsDepuisTexte](Outils[Champ](r, {"datasizebytes", "datasize", "size"})),
+					        Fichiers = Outils[Nombre](r, {"filecount"}),
+					        Dossiers = Outils[Nombre](r, {"foldercount"}),
+					        #"Longueur max. du chemin" = Outils[Nombre](r, {"maxpathlength"}),
+					        #"Permissions racine" = Outils[Nombre](r, {"rootpermissions"}),
+					        #"Dernier accès" = Outils[DateHeure](r, {"lastaccessed"}),
+					        #"Scan créé le" = Outils[DateHeure](r, {"createdon"}),
+					        #"Préparation à la migration" = Outils[Texte](r, {"migrationreadiness", "readiness"}),
+					        #"Task ID" = Outils[Texte](r, {"taskid"}),
+					        #"Fichier rapport" = Outils[Texte](r, {"_fichier"}),
+					        #"Date du fichier" = Record.FieldOrDefault(r, "_date", null)
+					    ]),
+					    Typee = Table.FromRecords(Lignes, type table [
+					        #"Chemin source" = nullable text, #"Statut du scan" = nullable text, #"Taille (octets)" = nullable number, Fichiers = nullable number,
+					        Dossiers = nullable number, #"Longueur max. du chemin" = nullable number, #"Permissions racine" = nullable number,
+					        #"Dernier accès" = nullable datetime, #"Scan créé le" = nullable datetime, #"Préparation à la migration" = nullable text,
+					        #"Task ID" = nullable text, #"Fichier rapport" = nullable text, #"Date du fichier" = nullable datetime]),
+					    // dernier scan connu pour chaque chemin source
+					    Cle = Table.AddColumn(Typee, "_cle", each Outils[CleChemin]([Chemin source]), type nullable text),
+					    Tries = Table.Buffer(Table.Sort(Cle, {{"Date du fichier", Order.Descending}, {"Scan créé le", Order.Descending}})),
+					    Uniques = Table.Distinct(Tries, {"_cle"}),
+					    Corr = Table.Buffer(
+					        Table.RenameColumns(
+					            Table.Distinct(
+					                Table.SelectColumns(
+					                    Table.SelectRows(Table.AddColumn(stg_Correspondance, "_k", each Outils[CleChemin]([Chemin source]), type nullable text), each [_k] <> null),
+					                    {"_k", "Bibliothèque"}),
+					                {"_k"}),
+					            {{"Bibliothèque", "_biblio"}})),
+					    J = Table.Join(Uniques, "_cle", Corr, "_k", JoinKind.LeftOuter),
+					    Biblio = Table.AddColumn(J, "Bibliothèque", each if [_biblio] <> null then [_biblio] else "(inconnue)", type text),
+					    Etat = Table.AddColumn(Biblio, "État", each
+					        let s = Text.Lower((if [#"Préparation à la migration"] = null then "" else [#"Préparation à la migration"]) & " " & (if [#"Statut du scan"] = null then "" else [#"Statut du scan"]))
+					        in if Text.Contains(s, "error") or Text.Contains(s, "fail") or Text.Contains(s, "erreur") or Text.Contains(s, "échec") then "🔴 Erreur"
+					           else if Text.Contains(s, "warning") or Text.Contains(s, "avertissement") then "🟠 Avertissement"
+					           else if Text.Contains(s, "ready") or Text.Contains(s, "success") or Text.Contains(s, "prêt") then "🟢 Prêt"
+					           else "⚪ En cours / inconnu", type text),
+					    TailleMo = Table.AddColumn(Etat, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+					    Resultat = Table.RemoveColumns(TailleMo, {"_cle", "_k", "_biblio", "Date du fichier"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Audit Controles'
+		lineageTag: c72a2c83-14e5-58fc-856a-dca6996cae75
+
+		column Code
+			dataType: string
+			lineageTag: 9b5afbad-6889-56f6-b628-82594c37c383
+			summarizeBy: none
+			sourceColumn: Code
+
+			annotation SummarizationSetBy = User
+
+		column Ordre
+			dataType: double
+			isHidden
+			formatString: 0
+			lineageTag: 66e12650-1a63-59ed-b97e-4e814af7aaf2
+			summarizeBy: none
+			sourceColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		column 'Catégorie'
+			dataType: string
+			lineageTag: 529fe17e-99fe-543a-b916-eb767d57e703
+			summarizeBy: none
+			sourceColumn: Catégorie
+
+			annotation SummarizationSetBy = User
+
+		column 'Gravité'
+			dataType: string
+			lineageTag: ad2b4b53-14c5-5e90-9bda-41871ffe4038
+			summarizeBy: none
+			sourceColumn: Gravité
+			sortByColumn: 'Ordre gravité'
+
+			annotation SummarizationSetBy = User
+
+		column 'Ordre gravité'
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: b5443a4f-a019-5d5d-ba7e-299de514412a
+			summarizeBy: none
+			sourceColumn: Ordre gravité
+
+			annotation SummarizationSetBy = User
+
+		column 'Libellé'
+			dataType: string
+			lineageTag: 89447ec2-4256-539f-893f-27804660b8fc
+			summarizeBy: none
+			sourceColumn: Libellé
+			sortByColumn: Ordre
+
+			annotation SummarizationSetBy = User
+
+		column 'Règle'
+			dataType: string
+			lineageTag: a47cf170-aabb-5e42-8f77-36c66aab27ec
+			summarizeBy: none
+			sourceColumn: Règle
+
+			annotation SummarizationSetBy = User
+
+		column Action
+			dataType: string
+			lineageTag: 23bb48f4-c47a-501d-8be4-47a895f9ea6f
+			summarizeBy: none
+			sourceColumn: Action
+
+			annotation SummarizationSetBy = User
+
+		partition 'Audit Controles' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("Audit_Source_Controles"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+					        let g = Outils[Texte](r, {"gravite"})
+					        in [
+					            Code = Outils[Texte](r, {"code"}),
+					            Ordre = Outils[Nombre](r, {"ordre"}),
+					            #"Catégorie" = Outils[Texte](r, {"categorie"}),
+					            #"Gravité" = g,
+					            #"Ordre gravité" = if g = "Bloquant" then 1 else if g = "À traiter" then 2 else 3,
+					            #"Libellé" = Outils[Texte](r, {"libelle"}),
+					            #"Règle" = Outils[Texte](r, {"regle"}),
+					            Action = Outils[Texte](r, {"action"})
+					        ]),
+					    Table0 = Table.FromRecords(Lignes, type table [
+					        Code = nullable text, Ordre = nullable number, #"Catégorie" = nullable text, #"Gravité" = nullable text,
+					        #"Ordre gravité" = Int64.Type, #"Libellé" = nullable text, #"Règle" = nullable text, Action = nullable text]),
+					    Resultat = Table.Distinct(Table.SelectRows(Table0, each [Code] <> null and [Code] <> ""), {"Code"})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Audit Constats'
+		lineageTag: c5e93d46-fa28-5e2c-88b0-163220212981
+
+		column Code
+			dataType: string
+			lineageTag: 11f6eedb-c387-5f6d-b2c6-f977e0c14845
+			summarizeBy: none
+			sourceColumn: Code
+
+			annotation SummarizationSetBy = User
+
+		column 'Gravité'
+			dataType: string
+			lineageTag: d3066774-045d-5e4d-ac99-f5303753a6da
+			summarizeBy: none
+			sourceColumn: Gravité
+			sortByColumn: 'Ordre gravité'
+
+			annotation SummarizationSetBy = User
+
+		column 'Ordre gravité'
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: 3274d0cd-4439-5da1-940d-d1a68ee30986
+			summarizeBy: none
+			sourceColumn: Ordre gravité
+
+			annotation SummarizationSetBy = User
+
+		column 'Catégorie'
+			dataType: string
+			lineageTag: 233630b7-bd37-536c-a6ee-3701ccb10de2
+			summarizeBy: none
+			sourceColumn: Catégorie
+
+			annotation SummarizationSetBy = User
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: cecd96da-4e9b-5350-8e6e-36dd82291814
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier racine'
+			dataType: string
+			lineageTag: 8e60b70a-5d4b-5b81-81ef-655201004af0
+			summarizeBy: none
+			sourceColumn: Dossier racine
+
+			annotation SummarizationSetBy = User
+
+		column 'Type élément'
+			dataType: string
+			lineageTag: 61f699a9-d8d6-5c5c-bbde-f063a78496ff
+			summarizeBy: none
+			sourceColumn: Type élément
+
+			annotation SummarizationSetBy = User
+
+		column Chemin
+			dataType: string
+			lineageTag: 9b6046d4-289c-5a06-811d-293b34ca49ac
+			summarizeBy: none
+			sourceColumn: Chemin
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin relatif'
+			dataType: string
+			lineageTag: c1a7dbcf-0e4c-5baa-b386-2cd36ef940d0
+			summarizeBy: none
+			sourceColumn: Chemin relatif
+
+			annotation SummarizationSetBy = User
+
+		column Nom
+			dataType: string
+			lineageTag: 98b57a76-2ac8-5e68-9492-35b4b71c06f6
+			summarizeBy: none
+			sourceColumn: Nom
+
+			annotation SummarizationSetBy = User
+
+		column Extension
+			dataType: string
+			lineageTag: 862f9c48-8633-57f0-9106-a65e5de8d1dd
+			summarizeBy: none
+			sourceColumn: Extension
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: 37791bfb-8cb7-5276-8b0b-0687a42a2408
+			summarizeBy: none
+			sourceColumn: Taille (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Taille (Mo)'
+			dataType: double
+			formatString: #,0.00
+			lineageTag: 3db863f5-cc90-581c-8c48-3a1d37827708
+			summarizeBy: none
+			sourceColumn: Taille (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column 'Date de modification'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: 6a702b10-79db-5cd6-8056-508e40177fb1
+			summarizeBy: none
+			sourceColumn: Date de modification
+
+			annotation SummarizationSetBy = User
+
+		column 'Longueur chemin cible'
+			dataType: double
+			formatString: 0
+			lineageTag: 507a3ba6-a42b-5db7-b112-0ee5d7515cb1
+			summarizeBy: none
+			sourceColumn: Longueur chemin cible
+
+			annotation SummarizationSetBy = User
+
+		column 'Détail'
+			dataType: string
+			lineageTag: c1875097-8eee-50de-9caf-28e1bf97aea1
+			summarizeBy: none
+			sourceColumn: Détail
+
+			annotation SummarizationSetBy = User
+
+		partition 'Audit Constats' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("Audit_Source_Constats"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+					        let
+					            g = Outils[Texte](r, {"gravite"}),
+					            taille = Outils[Nombre](r, {"tailleoctets"}),
+					            biblio = Outils[Texte](r, {"bibliotheque"})
+					        in [
+					            Code = Outils[Texte](r, {"code"}),
+					            #"Gravité" = g,
+					            #"Ordre gravité" = if g = "Bloquant" then 1 else if g = "À traiter" then 2 else 3,
+					            #"Catégorie" = Outils[Texte](r, {"categorie"}),
+					            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+					            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+					            #"Type élément" = Outils[Texte](r, {"typeelement"}),
+					            Chemin = Outils[Texte](r, {"chemin"}),
+					            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+					            Nom = Outils[Texte](r, {"nom"}),
+					            Extension = Outils[Texte](r, {"extension"}),
+					            #"Taille (octets)" = taille,
+					            #"Taille (Mo)" = if taille = null then null else taille / 1048576,
+					            #"Date de modification" = Outils[DateHeure](r, {"datemodification"}),
+					            #"Longueur chemin cible" = Outils[Nombre](r, {"longueurchemincible"}),
+					            #"Détail" = Outils[Texte](r, {"detail"})
+					        ]),
+					    Resultat = Table.FromRecords(Lignes, type table [
+					        Code = nullable text, #"Gravité" = nullable text, #"Ordre gravité" = Int64.Type, #"Catégorie" = nullable text,
+					        #"Bibliothèque" = text, #"Dossier racine" = nullable text, #"Type élément" = nullable text, Chemin = nullable text,
+					        #"Chemin relatif" = nullable text, Nom = nullable text, Extension = nullable text, #"Taille (octets)" = nullable number,
+					        #"Taille (Mo)" = nullable number, #"Date de modification" = nullable datetime, #"Longueur chemin cible" = nullable number,
+					        #"Détail" = nullable text])
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Audit Synthese'
+		lineageTag: 3f4d6f89-fbd7-5bc7-955c-4b53ee2b9bd0
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: f50fcd88-eccc-5919-b3db-799a712fbbc5
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier racine'
+			dataType: string
+			lineageTag: 38e53323-24f9-513c-b214-1355302ba71b
+			summarizeBy: none
+			sourceColumn: Dossier racine
+
+			annotation SummarizationSetBy = User
+
+		column Fichiers
+			dataType: double
+			formatString: #,0
+			lineageTag: d5037064-214c-5923-94df-c0bec1b799aa
+			summarizeBy: none
+			sourceColumn: Fichiers
+
+			annotation SummarizationSetBy = User
+
+		column Dossiers
+			dataType: double
+			formatString: #,0
+			lineageTag: 95fd6dda-6ee9-5ed3-8806-9f1a6078844e
+			summarizeBy: none
+			sourceColumn: Dossiers
+
+			annotation SummarizationSetBy = User
+
+		column 'Éléments'
+			dataType: double
+			formatString: #,0
+			lineageTag: 535c882d-3123-5769-99c2-e786a2a74203
+			summarizeBy: none
+			sourceColumn: Éléments
+
+			annotation SummarizationSetBy = User
+
+		column 'Volume (octets)'
+			dataType: double
+			formatString: #,0
+			lineageTag: 452cc3aa-6a60-5dea-9093-84a9bc43dfcd
+			summarizeBy: none
+			sourceColumn: Volume (octets)
+
+			annotation SummarizationSetBy = User
+
+		column 'Volume (Mo)'
+			dataType: double
+			formatString: #,0.0
+			lineageTag: 43ccf2b8-c226-5959-a81b-6f2136e18482
+			summarizeBy: none
+			sourceColumn: Volume (Mo)
+
+			annotation SummarizationSetBy = User
+
+		column 'Max éléments par dossier'
+			dataType: double
+			formatString: #,0
+			lineageTag: cf672f94-fe2b-5df6-a8b9-61c236a611f9
+			summarizeBy: none
+			sourceColumn: Max éléments par dossier
+
+			annotation SummarizationSetBy = User
+
+		column 'Dossier le plus chargé'
+			dataType: string
+			lineageTag: 0071fdea-175f-570d-bb8d-9d7dce112f6b
+			summarizeBy: none
+			sourceColumn: Dossier le plus chargé
+
+			annotation SummarizationSetBy = User
+
+		column 'Permissions uniques'
+			dataType: double
+			formatString: #,0
+			lineageTag: 7515e55f-2ff2-57bb-ad13-62c70a8a50b3
+			summarizeBy: none
+			sourceColumn: Permissions uniques
+
+			annotation SummarizationSetBy = User
+
+		column 'Refus (Deny)'
+			dataType: double
+			formatString: 0
+			lineageTag: 991ad885-cd1e-58b1-8daa-34aecdea1f9b
+			summarizeBy: none
+			sourceColumn: Refus (Deny)
+
+			annotation SummarizationSetBy = User
+
+		column 'SID orphelins'
+			dataType: double
+			formatString: 0
+			lineageTag: e573bab7-ff46-5dd4-8c1f-7f7e50c9d48d
+			summarizeBy: none
+			sourceColumn: SID orphelins
+
+			annotation SummarizationSetBy = User
+
+		column 'Constats bloquants'
+			dataType: double
+			formatString: #,0
+			lineageTag: e8b813c5-ca3d-5526-b805-6aeb9baa3820
+			summarizeBy: none
+			sourceColumn: Constats bloquants
+
+			annotation SummarizationSetBy = User
+
+		column 'Constats à traiter'
+			dataType: double
+			formatString: #,0
+			lineageTag: 29a814cf-9a23-5de1-bc70-4c3edddcd5ac
+			summarizeBy: none
+			sourceColumn: Constats à traiter
+
+			annotation SummarizationSetBy = User
+
+		column 'Constats information'
+			dataType: double
+			formatString: #,0
+			lineageTag: 1285a6bd-38dc-5e17-8b34-d7f0e39b9ed7
+			summarizeBy: none
+			sourceColumn: Constats information
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichiers bloqués'
+			dataType: double
+			formatString: #,0
+			lineageTag: 404c7d99-f42b-5a0b-b01e-8cece9478850
+			summarizeBy: none
+			sourceColumn: Fichiers bloqués
+
+			annotation SummarizationSetBy = User
+
+		column 'Fichiers migrables'
+			dataType: double
+			formatString: #,0
+			lineageTag: 0a0519dd-2b4e-5ffc-97fd-5d817bb9ed9a
+			summarizeBy: none
+			sourceColumn: Fichiers migrables
+
+			annotation SummarizationSetBy = User
+
+		column '% migrable'
+			dataType: double
+			formatString: 0.0%
+			lineageTag: fa1c6740-20d7-5680-af69-f6841ae49cd9
+			summarizeBy: none
+			sourceColumn: % migrable
+
+			annotation SummarizationSetBy = User
+
+		column Feu
+			dataType: string
+			lineageTag: ed9ee6c1-c188-56ba-8f9b-83d234c5a0b6
+			summarizeBy: none
+			sourceColumn: Feu
+			sortByColumn: 'Ordre feu'
+
+			annotation SummarizationSetBy = User
+
+		column 'Feu (affiché)'
+			dataType: string
+			lineageTag: 78bf0cd5-c692-50a8-9f33-91a26d7e8b0f
+			summarizeBy: none
+			sourceColumn: Feu (affiché)
+			sortByColumn: 'Ordre feu'
+
+			annotation SummarizationSetBy = User
+
+		column 'Ordre feu'
+			dataType: int64
+			isHidden
+			formatString: 0
+			lineageTag: b28b3867-d4ce-5a4f-a61c-c15d6d184077
+			summarizeBy: none
+			sourceColumn: Ordre feu
+
+			annotation SummarizationSetBy = User
+
+		column 'Date audit'
+			dataType: dateTime
+			formatString: dd/MM/yyyy HH:mm
+			lineageTag: c3c99122-fb3c-51ee-afea-f08d46c4033f
+			summarizeBy: none
+			sourceColumn: Date audit
+
+			annotation SummarizationSetBy = User
+
+		partition 'Audit Synthese' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("Audit_Source_Synthese"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+					        let
+					            feu = Outils[Texte](r, {"feu"}),
+					            volume = Outils[Nombre](r, {"volumeoctets"})
+					        in [
+					            #"Bibliothèque" = Outils[Texte](r, {"bibliotheque"}),
+					            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+					            Fichiers = Outils[Nombre](r, {"fichiers"}),
+					            Dossiers = Outils[Nombre](r, {"dossiers"}),
+					            #"Éléments" = Outils[Nombre](r, {"elements"}),
+					            #"Volume (octets)" = volume,
+					            #"Volume (Mo)" = if volume = null then null else volume / 1048576,
+					            #"Max éléments par dossier" = Outils[Nombre](r, {"maxelementsdossier"}),
+					            #"Dossier le plus chargé" = Outils[Texte](r, {"dossierlepluscharge"}),
+					            #"Permissions uniques" = Outils[Nombre](r, {"permissionsuniques"}),
+					            #"Refus (Deny)" = Outils[Nombre](r, {"acedeny"}),
+					            #"SID orphelins" = Outils[Nombre](r, {"sidorphelins"}),
+					            #"Constats bloquants" = Outils[Nombre](r, {"constatsbloquants"}),
+					            #"Constats à traiter" = Outils[Nombre](r, {"constatsatraiter"}),
+					            #"Constats information" = Outils[Nombre](r, {"constatsinformation"}),
+					            #"Fichiers bloqués" = Outils[Nombre](r, {"fichiersbloques"}),
+					            #"Fichiers migrables" = Outils[Nombre](r, {"fichiersmigrables"}),
+					            #"% migrable" = Outils[Nombre](r, {"pctmigrable"}),
+					            Feu = feu,
+					            #"Feu (affiché)" = if feu = "Rouge" then "🔴 Rouge" else if feu = "Orange" then "🟠 Orange" else if feu = "Vert" then "🟢 Vert" else feu,
+					            #"Ordre feu" = if feu = "Rouge" then 1 else if feu = "Orange" then 2 else 3,
+					            #"Date audit" = Outils[DateHeure](r, {"dateaudit"})
+					        ]),
+					    Table0 = Table.FromRecords(Lignes, type table [
+					        #"Bibliothèque" = nullable text, #"Dossier racine" = nullable text, Fichiers = nullable number, Dossiers = nullable number,
+					        #"Éléments" = nullable number, #"Volume (octets)" = nullable number, #"Volume (Mo)" = nullable number,
+					        #"Max éléments par dossier" = nullable number, #"Dossier le plus chargé" = nullable text, #"Permissions uniques" = nullable number,
+					        #"Refus (Deny)" = nullable number, #"SID orphelins" = nullable number, #"Constats bloquants" = nullable number,
+					        #"Constats à traiter" = nullable number, #"Constats information" = nullable number, #"Fichiers bloqués" = nullable number,
+					        #"Fichiers migrables" = nullable number, #"% migrable" = nullable number, Feu = nullable text, #"Feu (affiché)" = nullable text,
+					        #"Ordre feu" = Int64.Type, #"Date audit" = nullable datetime]),
+					    Resultat = Table.Distinct(Table.SelectRows(Table0, each [#"Bibliothèque"] <> null and [#"Bibliothèque"] <> ""), {"Bibliothèque", Comparer.OrdinalIgnoreCase})
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	table 'Audit Permissions'
+		lineageTag: 0e650946-e19d-593d-b24f-24bb43046c78
+
+		column 'Bibliothèque'
+			dataType: string
+			lineageTag: eec6dfaf-caf3-5b4b-ab21-e2a3793dad76
+			summarizeBy: none
+			sourceColumn: Bibliothèque
+
+			annotation SummarizationSetBy = User
+
+		column Chemin
+			dataType: string
+			lineageTag: bddf2a1d-22df-50b1-970f-b0765c04f661
+			summarizeBy: none
+			sourceColumn: Chemin
+
+			annotation SummarizationSetBy = User
+
+		column 'Chemin relatif'
+			dataType: string
+			lineageTag: e2959bfd-c058-5223-af19-d443cae2741f
+			summarizeBy: none
+			sourceColumn: Chemin relatif
+
+			annotation SummarizationSetBy = User
+
+		column 'Type élément'
+			dataType: string
+			lineageTag: 3597c1fc-65ba-5dd6-a366-bbcf8b269fe9
+			summarizeBy: none
+			sourceColumn: Type élément
+
+			annotation SummarizationSetBy = User
+
+		column 'Héritage coupé'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 09aed886-916a-54a5-ad0e-cccf15e571d0
+			summarizeBy: none
+			sourceColumn: Héritage coupé
+
+			annotation SummarizationSetBy = User
+
+		column 'Identité'
+			dataType: string
+			lineageTag: 13a9f690-9266-5e7c-9315-51b1a4850f86
+			summarizeBy: none
+			sourceColumn: Identité
+
+			annotation SummarizationSetBy = User
+
+		column SID
+			dataType: string
+			lineageTag: ce535218-954c-5ce0-9b94-4b898772e596
+			summarizeBy: none
+			sourceColumn: SID
+
+			annotation SummarizationSetBy = User
+
+		column 'Type accès'
+			dataType: string
+			lineageTag: 64e1bd41-34ff-5163-aab4-4a1f5bf19a28
+			summarizeBy: none
+			sourceColumn: Type accès
+
+			annotation SummarizationSetBy = User
+
+		column Droits
+			dataType: string
+			lineageTag: 6515615b-c829-5c39-ad5c-648ea1378af5
+			summarizeBy: none
+			sourceColumn: Droits
+
+			annotation SummarizationSetBy = User
+
+		column 'Correspondance SharePoint'
+			dataType: string
+			lineageTag: 4886873b-107d-59c2-9fa0-b9ea08fe2673
+			summarizeBy: none
+			sourceColumn: Correspondance SharePoint
+
+			annotation SummarizationSetBy = User
+
+		column Orpheline
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 1d340539-6527-5cbe-86a9-6d6f1f0002d8
+			summarizeBy: none
+			sourceColumn: Orpheline
+
+			annotation SummarizationSetBy = User
+
+		column 'Compte local ou intégré'
+			dataType: boolean
+			formatString: """VRAI"";""VRAI"";""FAUX"""
+			lineageTag: 050ccdd4-92df-5d8e-b857-1d827e2b13e5
+			summarizeBy: none
+			sourceColumn: Compte local ou intégré
+
+			annotation SummarizationSetBy = User
+
+		partition 'Audit Permissions' = m
+			mode: import
+			source =
+					let
+					    Brut = fnLireCsv("Audit_Source_Permissions"),
+					    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+					        let biblio = Outils[Texte](r, {"bibliotheque"})
+					        in [
+					            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+					            Chemin = Outils[Texte](r, {"chemin"}),
+					            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+					            #"Type élément" = Outils[Texte](r, {"typeelement"}),
+					            #"Héritage coupé" = Outils[Booleen](r, {"heritagecoupe"}),
+					            #"Identité" = Outils[Texte](r, {"identite"}),
+					            SID = Outils[Texte](r, {"sid"}),
+					            #"Type accès" = Outils[Texte](r, {"typeacces"}),
+					            Droits = Outils[Texte](r, {"droits"}),
+					            #"Correspondance SharePoint" = Outils[Texte](r, {"correspondancesharepoint"}),
+					            Orpheline = Outils[Booleen](r, {"orpheline"}),
+					            #"Compte local ou intégré" = Outils[Booleen](r, {"comptelocalouintegre"})
+					        ]),
+					    Resultat = Table.FromRecords(Lignes, type table [
+					        #"Bibliothèque" = text, Chemin = nullable text, #"Chemin relatif" = nullable text, #"Type élément" = nullable text,
+					        #"Héritage coupé" = nullable logical, #"Identité" = nullable text, SID = nullable text, #"Type accès" = nullable text,
+					        Droits = nullable text, #"Correspondance SharePoint" = nullable text, Orpheline = nullable logical,
+					        #"Compte local ou intégré" = nullable logical])
+					in
+					    Resultat
+
+		annotation PBI_ResultType = Table
+
+
+	relationship 5d935d85-01c5-53ab-bd4e-c5c45e6fdbb1
+		fromColumn: 'Taches Migration'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship fba13c5b-edde-5981-b365-5b77fbda3113
+		fromColumn: 'Elements Migration'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship d2ae8aff-e045-529c-bfff-64cca3e16cd5
+		fromColumn: 'Echecs Migration'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship b8645797-044b-5bd3-b199-d879520a22df
+		fromColumn: 'Inventaire Source'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship 9e0814a5-8083-5fde-9808-8140ddb53bda
+		fromColumn: 'Inventaire SharePoint'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship 2b0ea715-4f3b-551a-a35a-dc36a4ea5366
+		fromColumn: 'Scan Migration Manager'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship 6f4881ca-16f7-58e2-9403-5b80bdaa35e0
+		fromColumn: 'Anomalies Source'.'Chemin complet'
+		toColumn: 'Inventaire Source'.'Chemin complet'
+
+	relationship 6bdb400a-ce0d-5fb0-9ec0-4ba9cd00e1a1
+		fromColumn: 'Audit Constats'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship 37adf713-a5c3-5008-b8e0-ac1a476d0faa
+		fromColumn: 'Audit Synthese'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship c841ec70-e1cd-561b-90e5-aaaf25418d98
+		fromColumn: 'Audit Permissions'.'Bibliothèque'
+		toColumn: Bibliotheques.'Bibliothèque'
+
+	relationship d879ea1b-a744-5c45-ba9d-b12232eb24bd
+		fromColumn: 'Audit Constats'.Code
+		toColumn: 'Audit Controles'.Code

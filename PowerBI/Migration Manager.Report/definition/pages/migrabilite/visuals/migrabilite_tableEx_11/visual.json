@@ -1,0 +1,214 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "migrabilite_tableEx_11",
+  "position": {
+    "x": 20,
+    "y": 190,
+    "z": 11000,
+    "width": 700,
+    "height": 250,
+    "tabOrder": 11000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Feu (affiché)"
+                }
+              },
+              "queryRef": "Audit Synthese.Feu (affiché)",
+              "nativeQueryRef": "Feu (affiché)",
+              "displayName": "Feu"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Audit Synthese.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Fichiers"
+                }
+              },
+              "queryRef": "Audit Synthese.Fichiers",
+              "nativeQueryRef": "Fichiers"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Volume (Mo)"
+                }
+              },
+              "queryRef": "Audit Synthese.Volume (Mo)",
+              "nativeQueryRef": "Volume (Mo)"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "% migrable"
+                }
+              },
+              "queryRef": "Audit Synthese.% migrable",
+              "nativeQueryRef": "% migrable"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Fichiers bloqués"
+                }
+              },
+              "queryRef": "Audit Synthese.Fichiers bloqués",
+              "nativeQueryRef": "Fichiers bloqués"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Constats bloquants"
+                }
+              },
+              "queryRef": "Audit Synthese.Constats bloquants",
+              "nativeQueryRef": "Constats bloquants",
+              "displayName": "Bloquants"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Constats à traiter"
+                }
+              },
+              "queryRef": "Audit Synthese.Constats à traiter",
+              "nativeQueryRef": "Constats à traiter",
+              "displayName": "À traiter"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Max éléments par dossier"
+                }
+              },
+              "queryRef": "Audit Synthese.Max éléments par dossier",
+              "nativeQueryRef": "Max éléments par dossier",
+              "displayName": "Max/dossier"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Synthese"
+                    }
+                  },
+                  "Property": "Permissions uniques"
+                }
+              },
+              "queryRef": "Audit Synthese.Permissions uniques",
+              "nativeQueryRef": "Permissions uniques"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Feu de migrabilité par bibliothèque'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

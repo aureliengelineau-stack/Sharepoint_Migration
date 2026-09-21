@@ -1,0 +1,133 @@
+table 'Audit Permissions'
+	lineageTag: 0e650946-e19d-593d-b24f-24bb43046c78
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: eec6dfaf-caf3-5b4b-ab21-e2a3793dad76
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column Chemin
+		dataType: string
+		lineageTag: bddf2a1d-22df-50b1-970f-b0765c04f661
+		summarizeBy: none
+		sourceColumn: Chemin
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin relatif'
+		dataType: string
+		lineageTag: e2959bfd-c058-5223-af19-d443cae2741f
+		summarizeBy: none
+		sourceColumn: Chemin relatif
+
+		annotation SummarizationSetBy = User
+
+	column 'Type élément'
+		dataType: string
+		lineageTag: 3597c1fc-65ba-5dd6-a366-bbcf8b269fe9
+		summarizeBy: none
+		sourceColumn: Type élément
+
+		annotation SummarizationSetBy = User
+
+	column 'Héritage coupé'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 09aed886-916a-54a5-ad0e-cccf15e571d0
+		summarizeBy: none
+		sourceColumn: Héritage coupé
+
+		annotation SummarizationSetBy = User
+
+	column 'Identité'
+		dataType: string
+		lineageTag: 13a9f690-9266-5e7c-9315-51b1a4850f86
+		summarizeBy: none
+		sourceColumn: Identité
+
+		annotation SummarizationSetBy = User
+
+	column SID
+		dataType: string
+		lineageTag: ce535218-954c-5ce0-9b94-4b898772e596
+		summarizeBy: none
+		sourceColumn: SID
+
+		annotation SummarizationSetBy = User
+
+	column 'Type accès'
+		dataType: string
+		lineageTag: 64e1bd41-34ff-5163-aab4-4a1f5bf19a28
+		summarizeBy: none
+		sourceColumn: Type accès
+
+		annotation SummarizationSetBy = User
+
+	column Droits
+		dataType: string
+		lineageTag: 6515615b-c829-5c39-ad5c-648ea1378af5
+		summarizeBy: none
+		sourceColumn: Droits
+
+		annotation SummarizationSetBy = User
+
+	column 'Correspondance SharePoint'
+		dataType: string
+		lineageTag: 4886873b-107d-59c2-9fa0-b9ea08fe2673
+		summarizeBy: none
+		sourceColumn: Correspondance SharePoint
+
+		annotation SummarizationSetBy = User
+
+	column Orpheline
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 1d340539-6527-5cbe-86a9-6d6f1f0002d8
+		summarizeBy: none
+		sourceColumn: Orpheline
+
+		annotation SummarizationSetBy = User
+
+	column 'Compte local ou intégré'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: 050ccdd4-92df-5d8e-b857-1d827e2b13e5
+		summarizeBy: none
+		sourceColumn: Compte local ou intégré
+
+		annotation SummarizationSetBy = User
+
+	partition 'Audit Permissions' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("Audit_Source_Permissions"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+				        let biblio = Outils[Texte](r, {"bibliotheque"})
+				        in [
+				            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+				            Chemin = Outils[Texte](r, {"chemin"}),
+				            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+				            #"Type élément" = Outils[Texte](r, {"typeelement"}),
+				            #"Héritage coupé" = Outils[Booleen](r, {"heritagecoupe"}),
+				            #"Identité" = Outils[Texte](r, {"identite"}),
+				            SID = Outils[Texte](r, {"sid"}),
+				            #"Type accès" = Outils[Texte](r, {"typeacces"}),
+				            Droits = Outils[Texte](r, {"droits"}),
+				            #"Correspondance SharePoint" = Outils[Texte](r, {"correspondancesharepoint"}),
+				            Orpheline = Outils[Booleen](r, {"orpheline"}),
+				            #"Compte local ou intégré" = Outils[Booleen](r, {"comptelocalouintegre"})
+				        ]),
+				    Resultat = Table.FromRecords(Lignes, type table [
+				        #"Bibliothèque" = text, Chemin = nullable text, #"Chemin relatif" = nullable text, #"Type élément" = nullable text,
+				        #"Héritage coupé" = nullable logical, #"Identité" = nullable text, SID = nullable text, #"Type accès" = nullable text,
+				        Droits = nullable text, #"Correspondance SharePoint" = nullable text, Orpheline = nullable logical,
+				        #"Compte local ou intégré" = nullable logical])
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

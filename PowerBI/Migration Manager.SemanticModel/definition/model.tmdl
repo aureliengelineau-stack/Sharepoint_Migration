@@ -1,0 +1,43 @@
+model Model
+	culture: fr-FR
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: fr-FR
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation PBI_QueryOrder = ["DossierRapports", "CultureRapports", "Outils", "fnLireCsv", "stg_Correspondance", "stg_Source", "stg_SharePoint", "stg_Taches", "stg_Elements", "stg_Echecs", "Bibliotheques", "Taches Migration", "Elements Migration", "Echecs Migration", "Pipeline Migration", "Analyse Migration", "Inventaire Source", "Anomalies Source", "Inventaire SharePoint", "Fichiers de rapport", "Scan Migration Manager", "Audit Controles", "Audit Constats", "Audit Synthese", "Audit Permissions", "_Mesures"]
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["DevMode"]
+
+queryGroup Paramètres
+
+	annotation PBI_QueryGroupOrder = 0
+
+queryGroup Fonctions
+
+	annotation PBI_QueryGroupOrder = 1
+
+queryGroup Intermédiaires
+
+	annotation PBI_QueryGroupOrder = 2
+
+ref table _Mesures
+ref table Bibliotheques
+ref table 'Taches Migration'
+ref table 'Elements Migration'
+ref table 'Echecs Migration'
+ref table 'Pipeline Migration'
+ref table 'Analyse Migration'
+ref table 'Inventaire Source'
+ref table 'Anomalies Source'
+ref table 'Inventaire SharePoint'
+ref table 'Fichiers de rapport'
+ref table 'Scan Migration Manager'
+ref table 'Audit Controles'
+ref table 'Audit Constats'
+ref table 'Audit Synthese'
+ref table 'Audit Permissions'
+

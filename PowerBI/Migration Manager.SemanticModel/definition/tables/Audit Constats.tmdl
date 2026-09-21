@@ -1,0 +1,177 @@
+table 'Audit Constats'
+	lineageTag: c5e93d46-fa28-5e2c-88b0-163220212981
+
+	column Code
+		dataType: string
+		lineageTag: 11f6eedb-c387-5f6d-b2c6-f977e0c14845
+		summarizeBy: none
+		sourceColumn: Code
+
+		annotation SummarizationSetBy = User
+
+	column 'Gravité'
+		dataType: string
+		lineageTag: d3066774-045d-5e4d-ac99-f5303753a6da
+		summarizeBy: none
+		sourceColumn: Gravité
+		sortByColumn: 'Ordre gravité'
+
+		annotation SummarizationSetBy = User
+
+	column 'Ordre gravité'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 3274d0cd-4439-5da1-940d-d1a68ee30986
+		summarizeBy: none
+		sourceColumn: Ordre gravité
+
+		annotation SummarizationSetBy = User
+
+	column 'Catégorie'
+		dataType: string
+		lineageTag: 233630b7-bd37-536c-a6ee-3701ccb10de2
+		summarizeBy: none
+		sourceColumn: Catégorie
+
+		annotation SummarizationSetBy = User
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: cecd96da-4e9b-5350-8e6e-36dd82291814
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier racine'
+		dataType: string
+		lineageTag: 8e60b70a-5d4b-5b81-81ef-655201004af0
+		summarizeBy: none
+		sourceColumn: Dossier racine
+
+		annotation SummarizationSetBy = User
+
+	column 'Type élément'
+		dataType: string
+		lineageTag: 61f699a9-d8d6-5c5c-bbde-f063a78496ff
+		summarizeBy: none
+		sourceColumn: Type élément
+
+		annotation SummarizationSetBy = User
+
+	column Chemin
+		dataType: string
+		lineageTag: 9b6046d4-289c-5a06-811d-293b34ca49ac
+		summarizeBy: none
+		sourceColumn: Chemin
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin relatif'
+		dataType: string
+		lineageTag: c1a7dbcf-0e4c-5baa-b386-2cd36ef940d0
+		summarizeBy: none
+		sourceColumn: Chemin relatif
+
+		annotation SummarizationSetBy = User
+
+	column Nom
+		dataType: string
+		lineageTag: 98b57a76-2ac8-5e68-9492-35b4b71c06f6
+		summarizeBy: none
+		sourceColumn: Nom
+
+		annotation SummarizationSetBy = User
+
+	column Extension
+		dataType: string
+		lineageTag: 862f9c48-8633-57f0-9106-a65e5de8d1dd
+		summarizeBy: none
+		sourceColumn: Extension
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: 37791bfb-8cb7-5276-8b0b-0687a42a2408
+		summarizeBy: none
+		sourceColumn: Taille (octets)
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 3db863f5-cc90-581c-8c48-3a1d37827708
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column 'Date de modification'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: 6a702b10-79db-5cd6-8056-508e40177fb1
+		summarizeBy: none
+		sourceColumn: Date de modification
+
+		annotation SummarizationSetBy = User
+
+	column 'Longueur chemin cible'
+		dataType: double
+		formatString: 0
+		lineageTag: 507a3ba6-a42b-5db7-b112-0ee5d7515cb1
+		summarizeBy: none
+		sourceColumn: Longueur chemin cible
+
+		annotation SummarizationSetBy = User
+
+	column 'Détail'
+		dataType: string
+		lineageTag: c1875097-8eee-50de-9caf-28e1bf97aea1
+		summarizeBy: none
+		sourceColumn: Détail
+
+		annotation SummarizationSetBy = User
+
+	partition 'Audit Constats' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("Audit_Source_Constats"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+				        let
+				            g = Outils[Texte](r, {"gravite"}),
+				            taille = Outils[Nombre](r, {"tailleoctets"}),
+				            biblio = Outils[Texte](r, {"bibliotheque"})
+				        in [
+				            Code = Outils[Texte](r, {"code"}),
+				            #"Gravité" = g,
+				            #"Ordre gravité" = if g = "Bloquant" then 1 else if g = "À traiter" then 2 else 3,
+				            #"Catégorie" = Outils[Texte](r, {"categorie"}),
+				            #"Bibliothèque" = if biblio = null then "(non mappé)" else biblio,
+				            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+				            #"Type élément" = Outils[Texte](r, {"typeelement"}),
+				            Chemin = Outils[Texte](r, {"chemin"}),
+				            #"Chemin relatif" = Outils[Texte](r, {"cheminrelatif"}),
+				            Nom = Outils[Texte](r, {"nom"}),
+				            Extension = Outils[Texte](r, {"extension"}),
+				            #"Taille (octets)" = taille,
+				            #"Taille (Mo)" = if taille = null then null else taille / 1048576,
+				            #"Date de modification" = Outils[DateHeure](r, {"datemodification"}),
+				            #"Longueur chemin cible" = Outils[Nombre](r, {"longueurchemincible"}),
+				            #"Détail" = Outils[Texte](r, {"detail"})
+				        ]),
+				    Resultat = Table.FromRecords(Lignes, type table [
+				        Code = nullable text, #"Gravité" = nullable text, #"Ordre gravité" = Int64.Type, #"Catégorie" = nullable text,
+				        #"Bibliothèque" = text, #"Dossier racine" = nullable text, #"Type élément" = nullable text, Chemin = nullable text,
+				        #"Chemin relatif" = nullable text, Nom = nullable text, Extension = nullable text, #"Taille (octets)" = nullable number,
+				        #"Taille (Mo)" = nullable number, #"Date de modification" = nullable datetime, #"Longueur chemin cible" = nullable number,
+				        #"Détail" = nullable text])
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

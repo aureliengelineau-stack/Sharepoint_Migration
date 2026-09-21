@@ -1,0 +1,7 @@
+﻿DossierSource,Bibliotheque,CheminSource,CheminLocal,UrlCible
+01_Clients,Clients,\\DEMO-SRV01\FileServer\01_Clients,C:\DemoMigration\FileServer\01_Clients,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/Clients
+02_RH_Collaborateurs,RH,\\DEMO-SRV01\FileServer\02_RH_Collaborateurs,C:\DemoMigration\FileServer\02_RH_Collaborateurs,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/RH
+03_Finance,Finance,\\DEMO-SRV01\FileServer\03_Finance,C:\DemoMigration\FileServer\03_Finance,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/Finance
+04_Direction,Direction,\\DEMO-SRV01\FileServer\04_Direction,C:\DemoMigration\FileServer\04_Direction,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/Direction
+05_Commun,Commun,\\DEMO-SRV01\FileServer\05_Commun,C:\DemoMigration\FileServer\05_Commun,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/Commun
+06_Archives,Archives,\\DEMO-SRV01\FileServer\06_Archives,C:\DemoMigration\FileServer\06_Archives,https://m365x71797824.sharepoint.com/sites/MigrationFileServer/Archives

@@ -1,0 +1,129 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "migrabilite_tableEx_13",
+  "position": {
+    "x": 20,
+    "y": 450,
+    "z": 13000,
+    "width": 560,
+    "height": 258,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Controles"
+                    }
+                  },
+                  "Property": "Libellé"
+                }
+              },
+              "queryRef": "Audit Controles.Libellé",
+              "nativeQueryRef": "Libellé",
+              "displayName": "Contrôle"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Controles"
+                    }
+                  },
+                  "Property": "Gravité"
+                }
+              },
+              "queryRef": "Audit Controles.Gravité",
+              "nativeQueryRef": "Gravité"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Mesures"
+                    }
+                  },
+                  "Property": "Résultat du contrôle"
+                }
+              },
+              "queryRef": "_Mesures.Résultat du contrôle",
+              "nativeQueryRef": "Résultat du contrôle",
+              "displayName": "Résultat"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Mesures"
+                    }
+                  },
+                  "Property": "Constats par contrôle"
+                }
+              },
+              "queryRef": "_Mesures.Constats par contrôle",
+              "nativeQueryRef": "Constats par contrôle",
+              "displayName": "Constats"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Checklist des contrôles'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

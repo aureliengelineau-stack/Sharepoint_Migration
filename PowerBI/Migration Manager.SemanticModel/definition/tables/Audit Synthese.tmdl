@@ -1,0 +1,246 @@
+table 'Audit Synthese'
+	lineageTag: 3f4d6f89-fbd7-5bc7-955c-4b53ee2b9bd0
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: f50fcd88-eccc-5919-b3db-799a712fbbc5
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier racine'
+		dataType: string
+		lineageTag: 38e53323-24f9-513c-b214-1355302ba71b
+		summarizeBy: none
+		sourceColumn: Dossier racine
+
+		annotation SummarizationSetBy = User
+
+	column Fichiers
+		dataType: double
+		formatString: #,0
+		lineageTag: d5037064-214c-5923-94df-c0bec1b799aa
+		summarizeBy: none
+		sourceColumn: Fichiers
+
+		annotation SummarizationSetBy = User
+
+	column Dossiers
+		dataType: double
+		formatString: #,0
+		lineageTag: 95fd6dda-6ee9-5ed3-8806-9f1a6078844e
+		summarizeBy: none
+		sourceColumn: Dossiers
+
+		annotation SummarizationSetBy = User
+
+	column 'Éléments'
+		dataType: double
+		formatString: #,0
+		lineageTag: 535c882d-3123-5769-99c2-e786a2a74203
+		summarizeBy: none
+		sourceColumn: Éléments
+
+		annotation SummarizationSetBy = User
+
+	column 'Volume (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: 452cc3aa-6a60-5dea-9093-84a9bc43dfcd
+		summarizeBy: none
+		sourceColumn: Volume (octets)
+
+		annotation SummarizationSetBy = User
+
+	column 'Volume (Mo)'
+		dataType: double
+		formatString: #,0.0
+		lineageTag: 43ccf2b8-c226-5959-a81b-6f2136e18482
+		summarizeBy: none
+		sourceColumn: Volume (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column 'Max éléments par dossier'
+		dataType: double
+		formatString: #,0
+		lineageTag: cf672f94-fe2b-5df6-a8b9-61c236a611f9
+		summarizeBy: none
+		sourceColumn: Max éléments par dossier
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier le plus chargé'
+		dataType: string
+		lineageTag: 0071fdea-175f-570d-bb8d-9d7dce112f6b
+		summarizeBy: none
+		sourceColumn: Dossier le plus chargé
+
+		annotation SummarizationSetBy = User
+
+	column 'Permissions uniques'
+		dataType: double
+		formatString: #,0
+		lineageTag: 7515e55f-2ff2-57bb-ad13-62c70a8a50b3
+		summarizeBy: none
+		sourceColumn: Permissions uniques
+
+		annotation SummarizationSetBy = User
+
+	column 'Refus (Deny)'
+		dataType: double
+		formatString: 0
+		lineageTag: 991ad885-cd1e-58b1-8daa-34aecdea1f9b
+		summarizeBy: none
+		sourceColumn: Refus (Deny)
+
+		annotation SummarizationSetBy = User
+
+	column 'SID orphelins'
+		dataType: double
+		formatString: 0
+		lineageTag: e573bab7-ff46-5dd4-8c1f-7f7e50c9d48d
+		summarizeBy: none
+		sourceColumn: SID orphelins
+
+		annotation SummarizationSetBy = User
+
+	column 'Constats bloquants'
+		dataType: double
+		formatString: #,0
+		lineageTag: e8b813c5-ca3d-5526-b805-6aeb9baa3820
+		summarizeBy: none
+		sourceColumn: Constats bloquants
+
+		annotation SummarizationSetBy = User
+
+	column 'Constats à traiter'
+		dataType: double
+		formatString: #,0
+		lineageTag: 29a814cf-9a23-5de1-bc70-4c3edddcd5ac
+		summarizeBy: none
+		sourceColumn: Constats à traiter
+
+		annotation SummarizationSetBy = User
+
+	column 'Constats information'
+		dataType: double
+		formatString: #,0
+		lineageTag: 1285a6bd-38dc-5e17-8b34-d7f0e39b9ed7
+		summarizeBy: none
+		sourceColumn: Constats information
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichiers bloqués'
+		dataType: double
+		formatString: #,0
+		lineageTag: 404c7d99-f42b-5a0b-b01e-8cece9478850
+		summarizeBy: none
+		sourceColumn: Fichiers bloqués
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichiers migrables'
+		dataType: double
+		formatString: #,0
+		lineageTag: 0a0519dd-2b4e-5ffc-97fd-5d817bb9ed9a
+		summarizeBy: none
+		sourceColumn: Fichiers migrables
+
+		annotation SummarizationSetBy = User
+
+	column '% migrable'
+		dataType: double
+		formatString: 0.0%
+		lineageTag: fa1c6740-20d7-5680-af69-f6841ae49cd9
+		summarizeBy: none
+		sourceColumn: % migrable
+
+		annotation SummarizationSetBy = User
+
+	column Feu
+		dataType: string
+		lineageTag: ed9ee6c1-c188-56ba-8f9b-83d234c5a0b6
+		summarizeBy: none
+		sourceColumn: Feu
+		sortByColumn: 'Ordre feu'
+
+		annotation SummarizationSetBy = User
+
+	column 'Feu (affiché)'
+		dataType: string
+		lineageTag: 78bf0cd5-c692-50a8-9f33-91a26d7e8b0f
+		summarizeBy: none
+		sourceColumn: Feu (affiché)
+		sortByColumn: 'Ordre feu'
+
+		annotation SummarizationSetBy = User
+
+	column 'Ordre feu'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: b28b3867-d4ce-5a4f-a61c-c15d6d184077
+		summarizeBy: none
+		sourceColumn: Ordre feu
+
+		annotation SummarizationSetBy = User
+
+	column 'Date audit'
+		dataType: dateTime
+		formatString: dd/MM/yyyy HH:mm
+		lineageTag: c3c99122-fb3c-51ee-afea-f08d46c4033f
+		summarizeBy: none
+		sourceColumn: Date audit
+
+		annotation SummarizationSetBy = User
+
+	partition 'Audit Synthese' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("Audit_Source_Synthese"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+				        let
+				            feu = Outils[Texte](r, {"feu"}),
+				            volume = Outils[Nombre](r, {"volumeoctets"})
+				        in [
+				            #"Bibliothèque" = Outils[Texte](r, {"bibliotheque"}),
+				            #"Dossier racine" = Outils[Texte](r, {"dossierracine"}),
+				            Fichiers = Outils[Nombre](r, {"fichiers"}),
+				            Dossiers = Outils[Nombre](r, {"dossiers"}),
+				            #"Éléments" = Outils[Nombre](r, {"elements"}),
+				            #"Volume (octets)" = volume,
+				            #"Volume (Mo)" = if volume = null then null else volume / 1048576,
+				            #"Max éléments par dossier" = Outils[Nombre](r, {"maxelementsdossier"}),
+				            #"Dossier le plus chargé" = Outils[Texte](r, {"dossierlepluscharge"}),
+				            #"Permissions uniques" = Outils[Nombre](r, {"permissionsuniques"}),
+				            #"Refus (Deny)" = Outils[Nombre](r, {"acedeny"}),
+				            #"SID orphelins" = Outils[Nombre](r, {"sidorphelins"}),
+				            #"Constats bloquants" = Outils[Nombre](r, {"constatsbloquants"}),
+				            #"Constats à traiter" = Outils[Nombre](r, {"constatsatraiter"}),
+				            #"Constats information" = Outils[Nombre](r, {"constatsinformation"}),
+				            #"Fichiers bloqués" = Outils[Nombre](r, {"fichiersbloques"}),
+				            #"Fichiers migrables" = Outils[Nombre](r, {"fichiersmigrables"}),
+				            #"% migrable" = Outils[Nombre](r, {"pctmigrable"}),
+				            Feu = feu,
+				            #"Feu (affiché)" = if feu = "Rouge" then "🔴 Rouge" else if feu = "Orange" then "🟠 Orange" else if feu = "Vert" then "🟢 Vert" else feu,
+				            #"Ordre feu" = if feu = "Rouge" then 1 else if feu = "Orange" then 2 else 3,
+				            #"Date audit" = Outils[DateHeure](r, {"dateaudit"})
+				        ]),
+				    Table0 = Table.FromRecords(Lignes, type table [
+				        #"Bibliothèque" = nullable text, #"Dossier racine" = nullable text, Fichiers = nullable number, Dossiers = nullable number,
+				        #"Éléments" = nullable number, #"Volume (octets)" = nullable number, #"Volume (Mo)" = nullable number,
+				        #"Max éléments par dossier" = nullable number, #"Dossier le plus chargé" = nullable text, #"Permissions uniques" = nullable number,
+				        #"Refus (Deny)" = nullable number, #"SID orphelins" = nullable number, #"Constats bloquants" = nullable number,
+				        #"Constats à traiter" = nullable number, #"Constats information" = nullable number, #"Fichiers bloqués" = nullable number,
+				        #"Fichiers migrables" = nullable number, #"% migrable" = nullable number, Feu = nullable text, #"Feu (affiché)" = nullable text,
+				        #"Ordre feu" = Int64.Type, #"Date audit" = nullable datetime]),
+				    Resultat = Table.Distinct(Table.SelectRows(Table0, each [#"Bibliothèque"] <> null and [#"Bibliothèque"] <> ""), {"Bibliothèque", Comparer.OrdinalIgnoreCase})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

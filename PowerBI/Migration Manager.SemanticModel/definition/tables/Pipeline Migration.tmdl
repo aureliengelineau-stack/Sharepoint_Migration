@@ -1,0 +1,110 @@
+table 'Pipeline Migration'
+	lineageTag: f7b2b2b7-8b53-5523-bea1-32f852b8c085
+
+	column Passage
+		dataType: double
+		formatString: 0
+		lineageTag: 6d4eda98-accd-5cc1-939f-abafc1c0d098
+		summarizeBy: none
+		sourceColumn: Passage
+
+		annotation SummarizationSetBy = User
+
+	column Ordre
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 2d9d0c5c-2b44-582f-8b95-c06254da3501
+		summarizeBy: none
+		sourceColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	column 'Étape'
+		dataType: string
+		lineageTag: b992c090-3f23-50c3-a7a2-6733f931485d
+		summarizeBy: none
+		sourceColumn: Étape
+		sortByColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	column Type
+		dataType: string
+		lineageTag: 43b08fab-f1e3-59ea-97cb-b232e12ceac8
+		summarizeBy: none
+		sourceColumn: Type
+
+		annotation SummarizationSetBy = User
+
+	column Nombre
+		dataType: double
+		formatString: #,0
+		lineageTag: 01b314b1-4fd3-5bb9-bda3-4e0249acf53f
+		summarizeBy: none
+		sourceColumn: Nombre
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichier rapport'
+		dataType: string
+		lineageTag: ee11d263-f66a-5c94-8bcc-2a58d23e801e
+		summarizeBy: none
+		sourceColumn: Fichier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier rapport'
+		dataType: string
+		lineageTag: ad4ecea1-0395-5902-86a2-0d2c98467169
+		summarizeBy: none
+		sourceColumn: Dossier rapport
+
+		annotation SummarizationSetBy = User
+
+	partition 'Pipeline Migration' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("ItemSummary"),
+				    Etapes = {
+				        {1, "Analysés", "Progression", {"scanned"}},
+				        {2, "À migrer", "Progression", {"expectedmigratedfilecount"}},
+				        {3, "Lus", "Progression", {"read"}},
+				        {4, "Empaquetés", "Progression", {"packaged"}},
+				        {5, "Téléversés", "Progression", {"uploaded"}},
+				        {6, "Soumis", "Progression", {"submitted"}},
+				        {7, "Migrés", "Progression", {"migrated"}},
+				        {11, "Filtrés", "Exclusion", {"filteredoutitems"}},
+				        {12, "Échecs analyse", "Échec", {"itemscanfailures"}},
+				        {13, "Échecs lecture", "Échec", {"failedreading"}},
+				        {14, "Échecs empaquetage", "Échec", {"failedpacking"}},
+				        {15, "Échecs téléversement", "Échec", {"faileduploading"}},
+				        {16, "Échecs soumission", "Échec", {"failedsubmitting"}},
+				        {17, "Échecs requête", "Échec", {"failedquerying"}}
+				    },
+				    Lignes = List.Combine(List.Transform(Table.ToRecords(Brut), (r) =>
+				        let
+				            fichier = Outils[Texte](r, {"_fichier"}),
+				            p = Outils[Nombre](r, {"incrementalround"}),
+				            pf = Outils[PassageDepuisFichier](fichier)
+				        in
+				            List.Transform(Etapes, (e) =>
+				                let n = Outils[Nombre](r, e{3})
+				                in [
+				                    Passage = if p <> null then p else if pf <> null then pf else 1,
+				                    Ordre = e{0},
+				                    #"Étape" = e{1},
+				                    Type = e{2},
+				                    Nombre = if n = null then 0 else n,
+				                    #"Fichier rapport" = fichier,
+				                    #"Dossier rapport" = Outils[Texte](r, {"_dossier"})
+				                ]))),
+				    Resultat = Table.FromRecords(Lignes, type table [
+				        Passage = number, Ordre = Int64.Type, #"Étape" = text, Type = text, Nombre = number,
+				        #"Fichier rapport" = nullable text, #"Dossier rapport" = nullable text])
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

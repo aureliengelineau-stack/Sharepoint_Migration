@@ -1,0 +1,154 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "inventaire_tableEx_15",
+  "position": {
+    "x": 430,
+    "y": 450,
+    "z": 15000,
+    "width": 830,
+    "height": 258,
+    "tabOrder": 15000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Anomalies Source"
+                    }
+                  },
+                  "Property": "Anomalie"
+                }
+              },
+              "queryRef": "Anomalies Source.Anomalie",
+              "nativeQueryRef": "Anomalie"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Anomalies Source"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Anomalies Source.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Anomalies Source"
+                    }
+                  },
+                  "Property": "Nom"
+                }
+              },
+              "queryRef": "Anomalies Source.Nom",
+              "nativeQueryRef": "Nom"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Anomalies Source"
+                    }
+                  },
+                  "Property": "Taille (Mo)"
+                }
+              },
+              "queryRef": "Anomalies Source.Taille (Mo)",
+              "nativeQueryRef": "Taille (Mo)"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Inventaire Source"
+                    }
+                  },
+                  "Property": "Statut rapport"
+                }
+              },
+              "queryRef": "Inventaire Source.Statut rapport",
+              "nativeQueryRef": "Statut rapport"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Anomalies Source"
+                    }
+                  },
+                  "Property": "Chemin complet"
+                }
+              },
+              "queryRef": "Anomalies Source.Chemin complet",
+              "nativeQueryRef": "Chemin complet"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Fichiers présentant une anomalie'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

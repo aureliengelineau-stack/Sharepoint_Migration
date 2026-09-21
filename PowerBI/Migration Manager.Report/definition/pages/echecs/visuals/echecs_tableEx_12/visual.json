@@ -1,0 +1,169 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "echecs_tableEx_12",
+  "position": {
+    "x": 20,
+    "y": 450,
+    "z": 12000,
+    "width": 800,
+    "height": 258,
+    "tabOrder": 12000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Elements Migration.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Nom"
+                }
+              },
+              "queryRef": "Elements Migration.Nom",
+              "nativeQueryRef": "Nom"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Statut"
+                }
+              },
+              "queryRef": "Elements Migration.Statut",
+              "nativeQueryRef": "Statut"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Catégorie"
+                }
+              },
+              "queryRef": "Elements Migration.Catégorie",
+              "nativeQueryRef": "Catégorie"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Message"
+                }
+              },
+              "queryRef": "Elements Migration.Message",
+              "nativeQueryRef": "Message"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Elements Migration"
+                    }
+                  },
+                  "Property": "Source"
+                }
+              },
+              "queryRef": "Elements Migration.Source",
+              "nativeQueryRef": "Source"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Mesures"
+                    }
+                  },
+                  "Property": "Non migrés (liste)"
+                }
+              },
+              "queryRef": "_Mesures.Non migrés (liste)",
+              "nativeQueryRef": "Non migrés (liste)",
+              "displayName": "Nb"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Détail des éléments non migrés'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

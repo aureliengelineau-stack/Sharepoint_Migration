@@ -1,0 +1,256 @@
+table 'Elements Migration'
+	lineageTag: 4f6054df-e693-5f37-a65f-02464eaee6c2
+
+	column Source
+		dataType: string
+		lineageTag: 216a2ed9-d3c9-575b-b6d4-7fb39f1c92ff
+		summarizeBy: none
+		sourceColumn: Source
+
+		annotation SummarizationSetBy = User
+
+	column Destination
+		dataType: string
+		lineageTag: d7843c52-8f10-5b4e-b2cf-13a88dcf101d
+		summarizeBy: none
+		sourceColumn: Destination
+
+		annotation SummarizationSetBy = User
+
+	column Nom
+		dataType: string
+		lineageTag: fe59038a-43d4-5658-86c0-b11fcb7c830a
+		summarizeBy: none
+		sourceColumn: Nom
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (octets)'
+		dataType: double
+		formatString: #,0
+		lineageTag: edf58b1b-5213-52ee-b15d-2c58266e175a
+		summarizeBy: none
+		sourceColumn: Taille (octets)
+
+		annotation SummarizationSetBy = User
+
+	column 'Type de contenu'
+		dataType: string
+		lineageTag: 4ef27483-0578-522b-a1b3-3a36fe329d2a
+		summarizeBy: none
+		sourceColumn: Type de contenu
+
+		annotation SummarizationSetBy = User
+
+	column 'Statut rapport'
+		dataType: string
+		lineageTag: ef173478-c78c-58f7-9d0e-bfc1d59ad42a
+		summarizeBy: none
+		sourceColumn: Statut rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Catégorie'
+		dataType: string
+		lineageTag: dc72697e-0531-51eb-8c5f-90a150985538
+		summarizeBy: none
+		sourceColumn: Catégorie
+
+		annotation SummarizationSetBy = User
+
+	column Message
+		dataType: string
+		lineageTag: 4913fe9d-738d-5420-8489-17b237d7c669
+		summarizeBy: none
+		sourceColumn: Message
+
+		annotation SummarizationSetBy = User
+
+	column 'ID source'
+		dataType: string
+		lineageTag: 983606fd-f1c0-5d54-af76-ff512fcaee7c
+		summarizeBy: none
+		sourceColumn: ID source
+
+		annotation SummarizationSetBy = User
+
+	column 'ID destination'
+		dataType: string
+		lineageTag: 4786260b-f965-58d9-8b6b-972b5a5bf3b6
+		summarizeBy: none
+		sourceColumn: ID destination
+
+		annotation SummarizationSetBy = User
+
+	column Package
+		dataType: string
+		lineageTag: a91ac3dd-2c44-54d7-9848-9f155cbf74fc
+		summarizeBy: none
+		sourceColumn: Package
+
+		annotation SummarizationSetBy = User
+
+	column 'Job de migration'
+		dataType: string
+		lineageTag: f44ac13f-845a-5a7f-b184-5aecb4ee7b57
+		summarizeBy: none
+		sourceColumn: Job de migration
+
+		annotation SummarizationSetBy = User
+
+	column Passage
+		dataType: double
+		formatString: 0
+		lineageTag: 4e03b3c5-32dc-59fe-9ac0-4fad92c2d533
+		summarizeBy: none
+		sourceColumn: Passage
+
+		annotation SummarizationSetBy = User
+
+	column 'Task ID'
+		dataType: string
+		lineageTag: edffa8ec-257b-5b31-9129-5e17035898c7
+		summarizeBy: none
+		sourceColumn: Task ID
+
+		annotation SummarizationSetBy = User
+
+	column Poste
+		dataType: string
+		lineageTag: 2fea4a36-96cd-5317-8884-66596a112290
+		summarizeBy: none
+		sourceColumn: Poste
+
+		annotation SummarizationSetBy = User
+
+	column 'Fichier rapport'
+		dataType: string
+		lineageTag: 37e3b562-8fab-57eb-ae9f-0ae942689cf0
+		summarizeBy: none
+		sourceColumn: Fichier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Dossier rapport'
+		dataType: string
+		lineageTag: 5a36fce4-67a7-5170-a5c1-7a1349589288
+		summarizeBy: none
+		sourceColumn: Dossier rapport
+
+		annotation SummarizationSetBy = User
+
+	column 'Clé source'
+		dataType: string
+		isHidden
+		lineageTag: f5bf04f6-a00f-5b94-8a5f-9b0895132d3a
+		summarizeBy: none
+		sourceColumn: Clé source
+
+		annotation SummarizationSetBy = User
+
+	column 'Clé cible'
+		dataType: string
+		isHidden
+		lineageTag: 09350176-8f2f-5c02-9500-e107a4e3961d
+		summarizeBy: none
+		sourceColumn: Clé cible
+
+		annotation SummarizationSetBy = User
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: a7ff7934-a4a2-586c-a752-b47b545c831f
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column Statut
+		dataType: string
+		lineageTag: 7fd534d3-c765-5afa-ac05-ccd7dede4d9c
+		summarizeBy: none
+		sourceColumn: Statut
+
+		annotation SummarizationSetBy = User
+
+	column Extension
+		dataType: string
+		lineageTag: c178678a-8e35-56da-bbd6-07165644843a
+		summarizeBy: none
+		sourceColumn: Extension
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 30b5f3e9-9210-5e13-9f40-c41948a35fac
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column 'Clé élément'
+		dataType: string
+		isHidden
+		lineageTag: beed0ff6-9ed8-5bae-af4d-06ec3aca7495
+		summarizeBy: none
+		sourceColumn: Clé élément
+
+		annotation SummarizationSetBy = User
+
+	column 'Dernier passage'
+		dataType: boolean
+		formatString: """VRAI"";""VRAI"";""FAUX"""
+		lineageTag: c826e9e0-fd36-54c4-a21f-231dd801c903
+		summarizeBy: none
+		sourceColumn: Dernier passage
+
+		annotation SummarizationSetBy = User
+
+	partition 'Elements Migration' = m
+		mode: import
+		source =
+				let
+				    Taches = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Distinct(
+				                Table.SelectColumns(Table.SelectRows(#"Taches Migration", each [Task ID] <> null), {"Task ID", "Bibliothèque"}),
+				                {"Task ID"}),
+				            {{"Task ID", "_tid"}, {"Bibliothèque", "_biblioTache"}})),
+				    Src = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Distinct(
+				                Table.SelectColumns(
+				                    Table.SelectRows(
+				                        Table.AddColumn(stg_Source, "_cleSrc", each Outils[CleChemin]([Chemin complet]), type nullable text),
+				                        each [_cleSrc] <> null),
+				                    {"_cleSrc", "Bibliothèque"}),
+				                {"_cleSrc"}),
+				            {{"Bibliothèque", "_biblioSrc"}})),
+				    Base0 = Table.AddColumn(stg_Elements, "Clé source", each Outils[CleChemin]([Source]), type nullable text),
+				    Base1 = Table.AddColumn(Base0, "Clé cible", each Outils[CleUrl]([Destination]), type nullable text),
+				    J1 = Table.Join(Base1, "Task ID", Taches, "_tid", JoinKind.LeftOuter),
+				    J2 = Table.Join(J1, "Clé source", Src, "_cleSrc", JoinKind.LeftOuter),
+				    Biblio = Table.AddColumn(J2, "Bibliothèque", each
+				        if [_biblioTache] <> null then [_biblioTache] else if [_biblioSrc] <> null then [_biblioSrc] else "(inconnue)", type text),
+				    Statut = Table.AddColumn(Biblio, "Statut", each Outils[StatutNormalise]([Statut rapport], [#"Catégorie"]), type text),
+				    Ext = Table.AddColumn(Statut, "Extension", each Outils[Extension]([Extension brute], [Nom]), type text),
+				    TailleMo = Table.AddColumn(Ext, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+				    Cle = Table.AddColumn(TailleMo, "Clé élément", each
+				        if [#"Clé source"] <> null then [#"Clé source"]
+				        else if [#"Clé cible"] <> null then [#"Clé cible"]
+				        else Text.Lower(if [Nom] = null then "" else [Nom]), type text),
+				    Tampon = Table.Buffer(Table.RemoveColumns(Cle, {"_tid", "_biblioTache", "_cleSrc", "_biblioSrc", "Extension brute"})),
+				    MaxParCle = Table.Buffer(
+				        Table.RenameColumns(
+				            Table.Group(Tampon, {"Clé élément"}, {{"_max", each List.Max([Passage]), type nullable number}}),
+				            {{"Clé élément", "_cleMax"}})),
+				    J3 = Table.Join(Tampon, "Clé élément", MaxParCle, "_cleMax", JoinKind.LeftOuter),
+				    Dernier = Table.AddColumn(J3, "Dernier passage", each [_max] = null or [Passage] >= [_max], type logical),
+				    Resultat = Table.RemoveColumns(Dernier, {"_cleMax", "_max"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

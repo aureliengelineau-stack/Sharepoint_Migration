@@ -1,0 +1,196 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "name": "autorisations_tableEx_13",
+  "position": {
+    "x": 20,
+    "y": 450,
+    "z": 13000,
+    "width": 1240,
+    "height": 258,
+    "tabOrder": 13000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Bibliothèque"
+                }
+              },
+              "queryRef": "Audit Permissions.Bibliothèque",
+              "nativeQueryRef": "Bibliothèque"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Chemin relatif"
+                }
+              },
+              "queryRef": "Audit Permissions.Chemin relatif",
+              "nativeQueryRef": "Chemin relatif"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Identité"
+                }
+              },
+              "queryRef": "Audit Permissions.Identité",
+              "nativeQueryRef": "Identité"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Type accès"
+                }
+              },
+              "queryRef": "Audit Permissions.Type accès",
+              "nativeQueryRef": "Type accès"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Droits"
+                }
+              },
+              "queryRef": "Audit Permissions.Droits",
+              "nativeQueryRef": "Droits"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Correspondance SharePoint"
+                }
+              },
+              "queryRef": "Audit Permissions.Correspondance SharePoint",
+              "nativeQueryRef": "Correspondance SharePoint"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Héritage coupé"
+                }
+              },
+              "queryRef": "Audit Permissions.Héritage coupé",
+              "nativeQueryRef": "Héritage coupé"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Orpheline"
+                }
+              },
+              "queryRef": "Audit Permissions.Orpheline",
+              "nativeQueryRef": "Orpheline"
+            },
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "Audit Permissions"
+                    }
+                  },
+                  "Property": "Compte local ou intégré"
+                }
+              },
+              "queryRef": "Audit Permissions.Compte local ou intégré",
+              "nativeQueryRef": "Compte local ou intégré"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Entrées d''ACL explicites'"
+                }
+              }
+            },
+            "fontSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "11D"
+                }
+              }
+            },
+            "bold": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Literal": {
+                      "Value": "'#3C3C3A'"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,4 @@
+Facultatif : extraire ici le module PowerShell Migration Manager
+(https://aka.ms/MMPowerShellModule, fichier Microsoft.SharePoint.MigrationManager.PowerShell.dll).
+Le script 03 le détecte automatiquement : Connect-MigrationService, Get-MigrationReport, Get-ScanReport.
+Sans module, le script 03 collecte les rapports téléchargés dans le centre de migration.

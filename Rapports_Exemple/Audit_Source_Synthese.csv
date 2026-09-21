@@ -1,0 +1,7 @@
+﻿"Bibliotheque","DossierRacine","Fichiers","Dossiers","Elements","VolumeOctets","MaxElementsDossier","DossierLePlusCharge","PermissionsUniques","ACEDeny","SIDOrphelins","ConstatsBloquants","ConstatsATraiter","ConstatsInformation","FichiersBloques","FichiersMigrables","PctMigrable","Feu","DateAudit"
+"Clients","01_Clients","616","220","836","6441535","20","01_Clients","0","0","0","1","0","45","1","615","0.9984","Rouge","2026-09-16T09:20:05"
+"RH","02_RH_Collaborateurs","365","129","494","2700370","30","02_RH_Collaborateurs\01_Dossiers_Individuels","1","1","1","0","3","19","0","365","1.0","Orange","2026-09-16T09:20:05"
+"Finance","03_Finance","55","17","72","1269097","8","03_Finance\Notes_de_frais\2026","1","0","0","0","2","4","0","55","1.0","Orange","2026-09-16T09:20:05"
+"Direction","04_Direction","38","5","43","1279564","12","04_Direction\Comite_de_direction\2024","1","0","0","1","3","3","1","37","0.9737","Rouge","2026-09-16T09:20:05"
+"Commun","05_Commun","52","6","58","34413955","20","05_Commun\Evenements\Seminaire_2025_Annecy","0","0","0","3","2","8","2","50","0.9615","Rouge","2026-09-16T09:20:05"
+"Archives","06_Archives","228","15","243","23386421","29","06_Archives\2016","0","0","0","3","2","227","0","228","1.0","Rouge","2026-09-16T09:20:05"

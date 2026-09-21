@@ -1,0 +1,69 @@
+table 'Anomalies Source'
+	lineageTag: a281b981-f68e-5a90-8c11-b9172d8cbc21
+
+	column 'Bibliothèque'
+		dataType: string
+		lineageTag: ae5d233e-ac8d-5ccb-83a0-aff58d8f8b37
+		summarizeBy: none
+		sourceColumn: Bibliothèque
+
+		annotation SummarizationSetBy = User
+
+	column 'Chemin complet'
+		dataType: string
+		lineageTag: ec421459-2c34-5fb0-bbf1-bd4126a9ea5a
+		summarizeBy: none
+		sourceColumn: Chemin complet
+
+		annotation SummarizationSetBy = User
+
+	column Nom
+		dataType: string
+		lineageTag: 95ac86e5-7ffa-506d-8d9b-0ad220e53c90
+		summarizeBy: none
+		sourceColumn: Nom
+
+		annotation SummarizationSetBy = User
+
+	column Extension
+		dataType: string
+		lineageTag: a7e89567-b326-511e-8219-014208c277a1
+		summarizeBy: none
+		sourceColumn: Extension
+
+		annotation SummarizationSetBy = User
+
+	column 'Taille (Mo)'
+		dataType: double
+		formatString: #,0.00
+		lineageTag: 8b873fac-9f07-50b6-a4ad-6eb584afea6b
+		summarizeBy: none
+		sourceColumn: Taille (Mo)
+
+		annotation SummarizationSetBy = User
+
+	column Anomalie
+		dataType: string
+		lineageTag: 37b3b4ad-8448-5675-a293-fe83602d972d
+		summarizeBy: none
+		sourceColumn: Anomalie
+
+		annotation SummarizationSetBy = User
+
+	partition 'Anomalies Source' = m
+		mode: import
+		source =
+				let
+				    Base = Table.SelectRows(stg_Source, each [Anomalies] <> null and [Anomalies] <> ""),
+				    Colonnes = Table.SelectColumns(Base, {"Bibliothèque", "Chemin complet", "Nom", "Extension", "Taille (octets)", "Anomalies"}),
+				    TailleMo = Table.AddColumn(Colonnes, "Taille (Mo)", each if [#"Taille (octets)"] = null then null else [#"Taille (octets)"] / 1048576, type nullable number),
+				    Liste = Table.AddColumn(TailleMo, "Anomalie", each List.Transform(Text.Split([Anomalies], "|"), Text.Trim)),
+				    Eclate = Table.ExpandListColumn(Liste, "Anomalie"),
+				    Filtre = Table.SelectRows(Eclate, each [Anomalie] <> null and [Anomalie] <> ""),
+				    Types = Table.TransformColumnTypes(Filtre, {{"Anomalie", type text}}),
+				    Resultat = Table.RemoveColumns(Types, {"Anomalies", "Taille (octets)"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+

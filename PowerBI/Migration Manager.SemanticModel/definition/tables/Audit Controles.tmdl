@@ -1,0 +1,99 @@
+table 'Audit Controles'
+	lineageTag: c72a2c83-14e5-58fc-856a-dca6996cae75
+
+	column Code
+		dataType: string
+		lineageTag: 9b5afbad-6889-56f6-b628-82594c37c383
+		summarizeBy: none
+		sourceColumn: Code
+
+		annotation SummarizationSetBy = User
+
+	column Ordre
+		dataType: double
+		isHidden
+		formatString: 0
+		lineageTag: 66e12650-1a63-59ed-b97e-4e814af7aaf2
+		summarizeBy: none
+		sourceColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	column 'Catégorie'
+		dataType: string
+		lineageTag: 529fe17e-99fe-543a-b916-eb767d57e703
+		summarizeBy: none
+		sourceColumn: Catégorie
+
+		annotation SummarizationSetBy = User
+
+	column 'Gravité'
+		dataType: string
+		lineageTag: ad2b4b53-14c5-5e90-9bda-41871ffe4038
+		summarizeBy: none
+		sourceColumn: Gravité
+		sortByColumn: 'Ordre gravité'
+
+		annotation SummarizationSetBy = User
+
+	column 'Ordre gravité'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: b5443a4f-a019-5d5d-ba7e-299de514412a
+		summarizeBy: none
+		sourceColumn: Ordre gravité
+
+		annotation SummarizationSetBy = User
+
+	column 'Libellé'
+		dataType: string
+		lineageTag: 89447ec2-4256-539f-893f-27804660b8fc
+		summarizeBy: none
+		sourceColumn: Libellé
+		sortByColumn: Ordre
+
+		annotation SummarizationSetBy = User
+
+	column 'Règle'
+		dataType: string
+		lineageTag: a47cf170-aabb-5e42-8f77-36c66aab27ec
+		summarizeBy: none
+		sourceColumn: Règle
+
+		annotation SummarizationSetBy = User
+
+	column Action
+		dataType: string
+		lineageTag: 23bb48f4-c47a-501d-8be4-47a895f9ea6f
+		summarizeBy: none
+		sourceColumn: Action
+
+		annotation SummarizationSetBy = User
+
+	partition 'Audit Controles' = m
+		mode: import
+		source =
+				let
+				    Brut = fnLireCsv("Audit_Source_Controles"),
+				    Lignes = List.Transform(Table.ToRecords(Brut), (r) =>
+				        let g = Outils[Texte](r, {"gravite"})
+				        in [
+				            Code = Outils[Texte](r, {"code"}),
+				            Ordre = Outils[Nombre](r, {"ordre"}),
+				            #"Catégorie" = Outils[Texte](r, {"categorie"}),
+				            #"Gravité" = g,
+				            #"Ordre gravité" = if g = "Bloquant" then 1 else if g = "À traiter" then 2 else 3,
+				            #"Libellé" = Outils[Texte](r, {"libelle"}),
+				            #"Règle" = Outils[Texte](r, {"regle"}),
+				            Action = Outils[Texte](r, {"action"})
+				        ]),
+				    Table0 = Table.FromRecords(Lignes, type table [
+				        Code = nullable text, Ordre = nullable number, #"Catégorie" = nullable text, #"Gravité" = nullable text,
+				        #"Ordre gravité" = Int64.Type, #"Libellé" = nullable text, #"Règle" = nullable text, Action = nullable text]),
+				    Resultat = Table.Distinct(Table.SelectRows(Table0, each [Code] <> null and [Code] <> ""), {"Code"})
+				in
+				    Resultat
+
+	annotation PBI_ResultType = Table
+
